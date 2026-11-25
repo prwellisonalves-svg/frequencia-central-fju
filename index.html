@@ -1,0 +1,2645 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Frequência de Aulas — Central FJU</title>
+
+  <!-- Fonte Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Supabase JS v2 via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- jsPDF via CDN para geração limpa de PDF -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            fjuNavy: '#091347',
+            fjuRoyal: '#0E1D66',
+            fjuDark: '#05091A',
+            fjuSurface: '#0B132B',
+            fjuCard: '#101B3D',
+            fjuCyan: '#00E1FF',
+            fjuBlue: '#00B8FF',
+            fjuRed: '#FF1E38',
+            fjuCrimson: '#E11D2E',
+          },
+          boxShadow: {
+            neonCyan: '0 0 20px rgba(0, 225, 255, 0.22)',
+            glowRed: '0 0 18px rgba(255, 30, 56, 0.25)',
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Estilo base dark mode e rolagem suave */
+    body {
+      background-color: #05091A;
+      color: #F8FAFC;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Fundo sutil inspirado na identidade Central FJU */
+    .fju-bg-mesh {
+      background-image:
+        radial-gradient(circle at 12% 8%, rgba(0, 225, 255, 0.12), transparent 36%),
+        radial-gradient(circle at 88% 12%, rgba(255, 30, 56, 0.11), transparent 34%),
+        radial-gradient(circle at 50% 95%, rgba(14, 29, 102, 0.35), transparent 50%);
+    }
+
+    /* Scrollbar discreta */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #070D24;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1E2F66;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00B8FF;
+    }
+  </style>
+</head>
+<body class="fju-bg-mesh min-h-screen flex flex-col selection:bg-fjuCyan selection:text-fjuDark">
+
+  <!-- ===================================================================== -->
+  <!-- CABEÇALHO PRINCIPAL — IDENTIDADE CENTRAL FJU                          -->
+  <!-- ===================================================================== -->
+  <header class="sticky top-0 z-30 border-b border-blue-900/60 bg-fjuDark/90 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <!-- Marca Central FJU + Logo Fixa -->
+      <div class="flex items-center gap-3.5">
+        <div class="relative shrink-0">
+          <div class="w-14 h-14 rounded-full p-0.5 bg-gradient-to-tr from-fjuRed via-fjuCyan to-fjuRoyal shadow-neonCyan flex items-center justify-center overflow-hidden">
+            <img
+              id="brandLogoImg"
+              alt="Logo Central FJU"
+              class="w-full h-full object-cover rounded-full bg-fjuNavy"
+            />
+          </div>
+          <span class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-fjuRed border-2 border-fjuDark flex items-center justify-center text-[8px] font-black text-white" title="Central FJU">
+            &raquo;
+          </span>
+        </div>
+
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-fjuRed font-black text-base sm:text-lg tracking-tighter">&raquo;</span>
+            <h1 class="text-lg sm:text-2xl font-black tracking-tight text-white">
+              CENTRAL <span class="text-fjuCyan drop-shadow-[0_0_10px_rgba(0,225,255,0.65)]">FJU</span>
+            </h1>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-300 font-semibold">
+            Frequência de aulas
+          </p>
+        </div>
+      </div>
+
+      <!-- Status de Conexão & Perfil de Acesso -->
+      <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+        <span id="roleBadge" class="hidden px-3 py-1.5 rounded-xl text-xs font-extrabold uppercase tracking-wider border"></span>
+
+        <button
+          id="btnSwitchRole"
+          type="button"
+          class="hidden px-3 py-2 rounded-xl text-xs font-bold bg-fjuCard hover:bg-blue-900/70 text-slate-200 border border-blue-700/70 transition flex items-center gap-1.5 cursor-pointer"
+          title="Trocar senha / perfil de acesso"
+        >
+          <span>🔒 Trocar Acesso</span>
+        </button>
+
+        <button
+          id="btnToggleSupabaseModal"
+          type="button"
+          class="px-3 py-2 rounded-xl text-xs font-semibold border transition flex items-center gap-2 cursor-pointer"
+          title="Configurar Supabase e SQL"
+        >
+          <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+          <span id="statusLabel">Modo Local (Offline)</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Banner de aviso / feedback -->
+  <div id="toastBanner" class="fixed bottom-5 right-5 z-50 max-w-md w-[calc(100%-2.5rem)] hidden">
+    <div id="toastInner" class="rounded-2xl px-4 py-3 shadow-2xl border backdrop-blur-md flex items-start justify-between gap-3 text-sm font-medium">
+      <p id="toastMessage" class="leading-snug"></p>
+      <button id="toastClose" type="button" class="text-xs opacity-75 hover:opacity-100 px-1 cursor-pointer">✕</button>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- CONTEÚDO PRINCIPAL                                                    -->
+  <!-- ===================================================================== -->
+  <main id="appMainContent" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 hidden">
+
+    <!-- Barra Superior: Seletor de Semana (Domingo a Sábado) & Resumo da Semana (Vermelho Normal) -->
+    <section id="adminWeekSection" class="rounded-2xl bg-gradient-to-br from-[#7F1D1D] via-[#991B1B] to-[#5C1111] border border-red-500/70 p-4 sm:p-5 shadow-xl">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <button
+              id="btnPrevWeek"
+              type="button"
+              class="p-2.5 rounded-xl bg-[#450A0A] hover:bg-[#B91C1C] border border-red-500/70 text-red-100 transition cursor-pointer"
+              title="Semana anterior"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            <div class="px-4 py-2 rounded-xl bg-[#450A0A]/90 border border-red-400/50">
+              <p id="weekRangeLabel" class="text-sm sm:text-base font-extrabold text-white"></p>
+              <p id="weekBadgeSub" class="text-[11px] text-red-200 font-medium"></p>
+            </div>
+
+            <button
+              id="btnNextWeek"
+              type="button"
+              class="p-2.5 rounded-xl bg-[#450A0A] hover:bg-[#B91C1C] border border-red-500/70 text-red-100 transition cursor-pointer"
+              title="Próxima semana"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            <button
+              id="btnCurrentWeek"
+              type="button"
+              class="px-3 py-2 rounded-xl text-xs font-bold bg-[#B91C1C]/80 hover:bg-[#DC2626] text-white border border-red-400/50 transition cursor-pointer"
+            >
+              Semana Atual
+            </button>
+          </div>
+        </div>
+
+        <!-- Ações da Semana: Exportar PDF & Limpar Fotos após PDF -->
+        <div class="flex flex-wrap items-center gap-2.5">
+          <button
+            id="btnExportPdf"
+            type="button"
+            class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-fjuCyan to-fjuBlue text-fjuDark hover:brightness-110 shadow-neonCyan transition flex items-center gap-2 cursor-pointer"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Exportar Relatório em PDF</span>
+          </button>
+
+          <button
+            id="btnDeleteWeekPhotos"
+            type="button"
+            class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold border transition flex items-center gap-2 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed"
+            title="Disponível após exportar o PDF da semana (quando houver fotos)"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <span id="btnDeletePhotosText">Apagar Fotos da Semana</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Aviso de status do PDF e retenção de fotos (14 dias) -->
+      <div id="weekPolicyBar" class="mt-4 pt-3.5 border-t border-red-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-red-100">
+        <div id="pdfExportStatusText" class="flex items-center gap-2"></div>
+        <div id="expiredPhotosAlert" class="hidden items-center gap-1.5 text-amber-300 font-semibold bg-amber-500/10 border border-amber-400/30 px-3 py-1 rounded-lg">
+          <span>⚠️ Existem fotos com 14+ dias (prazo de segurança atingido) prontas para limpeza.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SEÇÃO 1: SELETOR DE DIA DA SEMANA & AULAS DO DIA                     -->
+    <!-- =================================================================== -->
+    <section class="space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold text-white flex items-center gap-2">
+            <span class="w-1.5 h-6 rounded-full bg-fjuRed inline-block"></span>
+            <span>Relatório de aulas</span>
+          </h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-0.5">
+            Selecione um dia para visualizar as aulas e preencher a frequência.
+          </p>
+        </div>
+        <div id="selectedDayDatePreview" class="text-xs font-bold text-fjuCyan bg-fjuCard px-3 py-1.5 rounded-lg border border-blue-800/70"></div>
+      </div>
+
+      <!-- Abas dos Dias da Semana (DOM a SAB) -->
+      <div id="dayTabsContainer" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5"></div>
+
+      <!-- Lista de Aulas do Dia Selecionado -->
+      <div id="dayClassesContainer" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pt-1"></div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SEÇÃO 2: DASHBOARD SEMANAL & RANKING DE AULAS (VERDE ESCURO)        -->
+    <!-- =================================================================== -->
+    <section id="adminDashboardSection" class="rounded-2xl bg-gradient-to-br from-[#061F17] via-[#082A1F] to-[#041610] border border-emerald-800/70 p-4 sm:p-6 shadow-xl space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold text-white flex items-center gap-2">
+            <span class="w-1.5 h-6 rounded-full bg-emerald-400 inline-block"></span>
+            <span>Dashboard Semanal (Domingo a Sábado)</span>
+          </h2>
+        </div>
+      </div>
+
+      <!-- Cards de KPIs -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="rounded-2xl bg-[#0A3024]/90 border border-emerald-700/60 p-5 relative overflow-hidden">
+          <div class="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-emerald-400/10 blur-xl"></div>
+          <p class="text-xs font-bold uppercase tracking-wider text-emerald-200/80">Total Geral de Alunos</p>
+          <p id="kpiTotalStudents" class="text-3xl sm:text-4xl font-black text-white mt-2">0</p>
+          <p id="kpiClassesCount" class="text-xs text-emerald-300 mt-1.5 font-medium">0 aulas lançadas na semana</p>
+        </div>
+
+        <div class="rounded-2xl bg-[#0A3024]/90 border border-emerald-700/60 p-5 relative overflow-hidden">
+          <div class="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-teal-400/15 blur-xl"></div>
+          <p class="text-xs font-bold uppercase tracking-wider text-emerald-200/80">Primeira Vez na Aula</p>
+          <p id="kpiFirstTimeStudents" class="text-3xl sm:text-4xl font-black text-emerald-300 mt-2">0</p>
+          <p id="kpiFirstTimePercent" class="text-xs text-emerald-100/80 mt-1.5 font-medium">0% do total da semana</p>
+        </div>
+
+        <div class="rounded-2xl bg-[#0A3024]/90 border border-emerald-700/60 p-5 relative overflow-hidden">
+          <p class="text-xs font-bold uppercase tracking-wider text-emerald-200/80">Alunos Recorrentes</p>
+          <p id="kpiReturningStudents" class="text-3xl sm:text-4xl font-black text-teal-300 mt-2">0</p>
+          <p class="text-xs text-emerald-200/70 mt-1.5">Total menos primeira vez</p>
+        </div>
+
+        <div class="rounded-2xl bg-[#0A3024]/90 border border-emerald-700/60 p-5 relative overflow-hidden">
+          <p class="text-xs font-bold uppercase tracking-wider text-emerald-200/80">Fotos na Semana</p>
+          <p id="kpiWeekPhotos" class="text-3xl sm:text-4xl font-black text-white mt-2">0</p>
+          <p id="kpiWeekPhotosHint" class="text-xs text-emerald-200/70 mt-1.5">Retenção máx. de 14 dias</p>
+        </div>
+      </div>
+
+      <!-- Ranking das Aulas (Maior para Menor) -->
+      <div class="rounded-2xl bg-[#07241B]/95 border border-emerald-800/70 overflow-hidden shadow-xl">
+        <div class="px-5 py-4 border-b border-emerald-800/70 bg-[#051B14] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 class="text-base font-extrabold text-white">
+              Ranking das Aulas
+            </h3>
+          </div>
+          <span id="rankingCountBadge" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 self-start sm:self-auto">
+            0 aulas no ranking
+          </span>
+        </div>
+
+        <div id="rankingEmptyState" class="p-10 text-center">
+          <p class="text-emerald-100 font-semibold">Nenhum lançamento registrado nesta semana ainda.</p>
+          <p class="text-xs text-emerald-200/70 mt-1">
+            Selecione um dia da semana acima e clique em uma aula para registrar a frequência.
+          </p>
+        </div>
+
+        <div id="rankingTableWrapper" class="overflow-x-auto hidden">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-emerald-800/70 bg-[#051A13] text-[11px] font-bold uppercase tracking-wider text-emerald-200/80">
+                <th class="py-3.5 px-4">#</th>
+                <th class="py-3.5 px-4">Aula</th>
+                <th class="py-3.5 px-4">Dia / Horário</th>
+                <th class="py-3.5 px-4">Data</th>
+                <th class="py-3.5 px-4">Professor</th>
+                <th class="py-3.5 px-4">Tema</th>
+                <th class="py-3.5 px-4 text-right">1ª Vez</th>
+                <th class="py-3.5 px-4 text-right">Total Alunos</th>
+                <th class="py-3.5 px-4 text-center">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="rankingTableBody" class="divide-y divide-emerald-800/40 text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL DE LOGIN / SENHA DE ACESSO (OBRIGATÓRIO AO ABRIR)               -->
+  <!-- ===================================================================== -->
+  <div id="authModal" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-fjuDark/95 backdrop-blur-md">
+    <div class="w-full max-w-md rounded-2xl bg-fjuCard border border-blue-700/80 shadow-2xl overflow-hidden">
+      <div class="px-6 py-5 bg-gradient-to-r from-fjuNavy to-fjuRoyal border-b border-blue-800/70 flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-fjuRed via-fjuCyan to-fjuRoyal shrink-0 overflow-hidden">
+          <img id="authModalLogoImg" alt="Logo Central FJU" class="w-full h-full object-cover rounded-full bg-fjuNavy" />
+        </div>
+        <div>
+          <h2 class="text-lg font-black text-white tracking-tight">CENTRAL <span class="text-fjuCyan">FJU</span></h2>
+          <p class="text-xs text-slate-300 font-medium">Acesso restrito • Digite sua senha para continuar</p>
+        </div>
+      </div>
+
+      <form id="authForm" class="p-6 space-y-4">
+        <div>
+          <label for="inputAccessPassword" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+            Senha de Acesso *
+          </label>
+          <input
+            id="inputAccessPassword"
+            type="password"
+            required
+            autocomplete="current-password"
+            placeholder="Digite a senha do Professor ou Administrador"
+            class="w-full rounded-xl bg-fjuSurface border border-blue-800/80 focus:border-fjuCyan focus:outline-none px-4 py-3 text-white text-sm font-semibold"
+          />
+        </div>
+
+        <p id="authErrorMsg" class="hidden text-xs font-semibold text-red-300 bg-fjuRed/15 border border-fjuRed/40 rounded-xl px-3.5 py-2.5">
+          Senha incorreta. Verifique e tente novamente.
+        </p>
+
+        <button
+          type="submit"
+          class="w-full py-3 rounded-xl text-sm font-extrabold bg-gradient-to-r from-fjuCyan to-fjuBlue text-fjuDark hover:brightness-110 shadow-neonCyan transition cursor-pointer"
+        >
+          Entrar no Sistema
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL PARA CRIAR NOVA AULA NO DIA (APENAS ADMINISTRADOR)              -->
+  <!-- ===================================================================== -->
+  <div id="newClassModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="w-full max-w-md rounded-2xl bg-fjuCard border border-blue-700/70 shadow-2xl overflow-hidden">
+      <div class="px-5 py-4 bg-gradient-to-r from-fjuNavy to-fjuRoyal border-b border-blue-800/70 flex items-center justify-between gap-3">
+        <div>
+          <span id="newClassDayBadge" class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-fjuCyan/20 text-fjuCyan border border-fjuCyan/40"></span>
+          <h3 class="text-base sm:text-lg font-extrabold text-white mt-1">Criar Nova Aula</h3>
+        </div>
+        <button id="btnCloseNewClassModal" type="button" class="text-slate-300 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <form id="newClassForm" class="p-5 space-y-4">
+        <div>
+          <label for="inputNewClassName" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+            Nome da Aula *
+          </label>
+          <input
+            id="inputNewClassName"
+            type="text"
+            required
+            maxlength="100"
+            placeholder="Ex: Fotografia / Violino / Jiu-Jitsu"
+            class="w-full rounded-xl bg-fjuSurface border border-blue-800/80 focus:border-fjuCyan focus:outline-none px-3.5 py-2.5 text-white text-sm"
+          />
+        </div>
+
+        <div>
+          <label for="inputNewClassTime" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+            Horário da Aula *
+          </label>
+          <input
+            id="inputNewClassTime"
+            type="text"
+            required
+            maxlength="20"
+            placeholder="Ex: 15h00 ou 19h30"
+            class="w-full rounded-xl bg-fjuSurface border border-blue-800/80 focus:border-fjuCyan focus:outline-none px-3.5 py-2.5 text-white text-sm"
+          />
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-blue-900/70">
+          <button
+            id="btnCancelNewClass"
+            type="button"
+            class="px-4 py-2 rounded-xl text-xs font-bold bg-fjuSurface hover:bg-slate-800 text-slate-300 border border-slate-700 cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="px-4 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-fjuCyan to-fjuBlue text-fjuDark hover:brightness-110 shadow-neonCyan cursor-pointer"
+          >
+            Criar Aula
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL DE LANÇAMENTO DE FREQUÊNCIA DA AULA                             -->
+  <!-- ===================================================================== -->
+  <div id="attendanceModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="w-full max-w-xl max-h-[92vh] overflow-y-auto rounded-2xl bg-fjuCard border border-blue-700/70 shadow-2xl">
+      <div class="px-5 py-4 bg-gradient-to-r from-fjuNavy to-fjuRoyal border-b border-blue-800/70 flex items-center justify-between gap-3 sticky top-0 z-10">
+        <div>
+          <span id="modalClassMeta" class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-fjuCyan/20 text-fjuCyan border border-fjuCyan/40"></span>
+          <h3 id="modalClassTitle" class="text-base sm:text-lg font-extrabold text-white mt-1"></h3>
+        </div>
+        <button id="btnCloseAttendanceModal" type="button" class="text-slate-300 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <form id="attendanceForm" class="p-5 space-y-4">
+        <input type="hidden" id="formClassId" />
+        <input type="hidden" id="formRecordId" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="inputTotalStudents" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+              Quantidade total de alunos *
+            </label>
+            <input
+              id="inputTotalStudents"
+              type="number"
+              min="0"
+              step="1"
+              required
+              placeholder="Ex: 25"
+              class="w-full rounded-xl bg-fjuSurface border border-blue-800/80 focus:border-fjuCyan focus:outline-none px-3.5 py-2.5 text-white text-sm font-semibold"
+            />
+          </div>
+
+          <div>
+            <label for="inputFirstTimeStudents" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+              Pela primeira vez na aula *
+            </label>
+            <input
+              id="inputFirstTimeStudents"
+              type="number"
+              min="0"
+              step="1"
+              required
+              placeholder="Ex: 4"
+              class="w-full rounded-xl bg-fjuSurface border border-blue-800/80 focus:border-fjuCyan focus:outline-none px-3.5 py-2.5 text-white text-sm font-semibold"
+            />
+          </div>
+        </div>
+
+        <p id="validationWarning" class="hidden text-xs font-semibold text-red-300 bg-fjuRed/15 border border-fjuRed/40 rounded-xl px-3.5 py-2.5">
+          A quantidade de alunos pela primeira vez não pode ser maior que a quantidade total de alunos.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="inputLessonDate" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+              Data da aula *
+            </label>
+            <input
+              id="inputLessonDate"
+              type="date"
+              required
+              class="w-full rounded-xl bg-fjuSurface border border-blue-800/80 focus:border-fjuCyan focus:outline-none px-3.5 py-2.5 text-white text-sm"
+            />
+          </div>
+
+          <div>
+            <label for="inputTeacherName" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+              Professor *
+            </label>
+            <input
+              id="inputTeacherName"
+              type="text"
+              required
+              maxlength="100"
+              placeholder="Nome do professor"
+              class="w-full rounded-xl bg-fjuSurface border border-blue-800/80 focus:border-fjuCyan focus:outline-none px-3.5 py-2.5 text-white text-sm"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label for="inputLessonTheme" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+            Tema da aula *
+          </label>
+          <input
+            id="inputLessonTheme"
+            type="text"
+            required
+            maxlength="180"
+            placeholder="Assunto / conteúdo ministrado na aula"
+            class="w-full rounded-xl bg-fjuSurface border border-blue-800/80 focus:border-fjuCyan focus:outline-none px-3.5 py-2.5 text-white text-sm"
+          />
+        </div>
+
+        <!-- Fotos da aula (retenção de 2 semanas / limpeza após PDF) -->
+        <div class="rounded-xl bg-fjuSurface/80 border border-blue-900/70 p-3.5 space-y-3">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-200">Fotos da Aula (Opcional)</p>
+              <p class="text-[11px] text-slate-400">Guardadas por até 2 semanas (14 dias) ou apagadas após exportar o PDF.</p>
+            </div>
+            <label class="px-3 py-1.5 rounded-lg text-xs font-bold bg-fjuRoyal hover:bg-blue-800 text-fjuCyan border border-fjuCyan/40 transition cursor-pointer">
+              + Adicionar Foto(s)
+              <input id="inputLessonPhotos" type="file" accept="image/*" multiple class="hidden" />
+            </label>
+          </div>
+
+          <div id="modalPhotosPreview" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5"></div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-blue-900/70">
+          <button
+            id="btnDeleteRecord"
+            type="button"
+            class="hidden px-3.5 py-2 rounded-xl text-xs font-bold bg-fjuRed/15 hover:bg-fjuRed/30 text-red-300 border border-fjuRed/40 transition cursor-pointer"
+          >
+            Excluir Lançamento
+          </button>
+
+          <div class="flex items-center gap-2.5 ml-auto">
+            <button
+              id="btnCancelAttendance"
+              type="button"
+              class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-fjuSurface hover:bg-slate-800 text-slate-300 border border-slate-700 transition cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              id="btnSaveAttendance"
+              type="submit"
+              class="px-5 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-gradient-to-r from-fjuCyan to-fjuBlue text-fjuDark hover:brightness-110 shadow-neonCyan transition cursor-pointer"
+            >
+              Salvar Frequência
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL DE CONFIGURAÇÃO DO SUPABASE + SQL PRONTO                        -->
+  <!-- ===================================================================== -->
+  <div id="supabaseModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl bg-fjuCard border border-blue-700/70 shadow-2xl">
+      <div class="px-5 py-4 bg-gradient-to-r from-fjuNavy to-fjuRoyal border-b border-blue-800/70 flex items-center justify-between sticky top-0 z-10">
+        <div>
+          <h3 class="text-base sm:text-lg font-extrabold text-white">Conexão Supabase — Central FJU</h3>
+          <p class="text-xs text-slate-300">Configure URL e Chave Anon para sincronizar lançamentos e fotos na nuvem.</p>
+        </div>
+        <button id="btnCloseSupabaseModal" type="button" class="text-slate-300 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div class="grid grid-cols-1 gap-3.5">
+          <div>
+            <label for="cfgSupabaseUrl" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">
+              SUPABASE_URL
+            </label>
+            <input
+              id="cfgSupabaseUrl"
+              type="url"
+              placeholder="https://seu-projeto.supabase.co"
+              class="w-full rounded-xl bg-fjuSurface border border-blue-800/80 focus:border-fjuCyan focus:outline-none px-3.5 py-2.5 text-white text-sm"
+            />
+          </div>
+
+          <div>
+            <label for="cfgSupabaseAnonKey" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">
+              SUPABASE_ANON_KEY
+            </label>
+            <input
+              id="cfgSupabaseAnonKey"
+              type="text"
+              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              class="w-full rounded-xl bg-fjuSurface border border-blue-800/80 focus:border-fjuCyan focus:outline-none px-3.5 py-2.5 text-white text-sm"
+            />
+          </div>
+
+          <div>
+            <label for="cfgSupabaseBucket" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">
+              Nome do Bucket de Fotos (Storage)
+            </label>
+            <input
+              id="cfgSupabaseBucket"
+              type="text"
+              value="aula-fotos"
+              class="w-full rounded-xl bg-fjuSurface border border-blue-800/80 focus:border-fjuCyan focus:outline-none px-3.5 py-2.5 text-white text-sm"
+            />
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5">
+          <button
+            id="btnSaveSupabaseConfig"
+            type="button"
+            class="px-4 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-fjuCyan to-fjuBlue text-fjuDark hover:brightness-110 transition cursor-pointer"
+          >
+            Salvar e Conectar
+          </button>
+          <button
+            id="btnClearSupabaseConfig"
+            type="button"
+            class="px-4 py-2 rounded-xl text-xs font-bold bg-fjuSurface hover:bg-slate-800 text-slate-300 border border-slate-700 transition cursor-pointer"
+          >
+            Usar Apenas Modo Local
+          </button>
+        </div>
+
+        <!-- Script SQL pronto para colar no SQL Editor do Supabase -->
+        <div class="rounded-xl bg-fjuDark border border-blue-900/80 p-3.5 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs font-bold text-fjuCyan">SQL para criar tabela e bucket no Supabase</span>
+            <button
+              id="btnCopySql"
+              type="button"
+              class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-fjuRoyal hover:bg-blue-800 text-white border border-blue-700 transition cursor-pointer"
+            >
+              Copiar SQL
+            </button>
+          </div>
+          <pre id="supabaseSqlBlock" class="text-[11px] text-slate-300 overflow-x-auto leading-relaxed font-mono select-all">-- 1. Tabela de frequência das aulas da Central FJU
+create table if not exists public.frequencia_aulas (
+  id uuid primary key default gen_random_uuid(),
+  class_id text not null,
+  class_name text not null,
+  day_code text not null,
+  scheduled_time text not null,
+  lesson_date date not null,
+  total_students integer not null check (total_students >= 0),
+  first_time_students integer not null check (first_time_students >= 0 and first_time_students <= total_students),
+  theme text not null,
+  teacher text not null,
+  photos jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- 2. Habilitar RLS e políticas públicas para acesso via link
+alter table public.frequencia_aulas enable row level security;
+
+create policy "Acesso publico frequencia_aulas"
+on public.frequencia_aulas
+for all
+using (true)
+with check (true);
+
+-- 3. Bucket público para fotos das aulas
+insert into storage.buckets (id, name, public)
+values ('aula-fotos', 'aula-fotos', true)
+on conflict (id) do nothing;
+
+create policy "Leitura publica aula-fotos"
+on storage.objects for select
+using (bucket_id = 'aula-fotos');
+
+create policy "Upload publico aula-fotos"
+on storage.objects for insert
+with check (bucket_id = 'aula-fotos');
+
+create policy "Exclusao publica aula-fotos"
+on storage.objects for delete
+using (bucket_id = 'aula-fotos');</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL DE CONFIRMAÇÃO CUSTOMIZADO (SEM alert / confirm)               -->
+  <!-- ===================================================================== -->
+  <div id="confirmModal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="w-full max-w-md rounded-2xl bg-fjuCard border border-blue-700/70 p-5 shadow-2xl space-y-4">
+      <h3 id="confirmTitle" class="text-base font-extrabold text-white"></h3>
+      <p id="confirmMessage" class="text-xs sm:text-sm text-slate-300 leading-relaxed"></p>
+      <div class="flex items-center justify-end gap-2.5 pt-2">
+        <button id="btnConfirmCancel" type="button" class="px-4 py-2 rounded-xl text-xs font-bold bg-fjuSurface hover:bg-slate-800 text-slate-300 border border-slate-700 cursor-pointer">
+          Cancelar
+        </button>
+        <button id="btnConfirmOk" type="button" class="px-4 py-2 rounded-xl text-xs font-extrabold bg-fjuRed hover:bg-red-600 text-white cursor-pointer">
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- SCRIPT PRINCIPAL                                                      -->
+  <!-- ===================================================================== -->
+  <script>
+    /**
+     * =====================================================================
+     * 1. CONFIGURAÇÃO DO SUPABASE (EDITE AQUI OU PELO MODAL DE CONFIGURAÇÃO)
+     * =====================================================================
+     */
+    const DEFAULT_SUPABASE_CONFIG = {
+      url: 'https://spieqosfssugylecxvik.supabase.co', // Project URL base do Supabase
+      anonKey: 'sb_publishable_qU0HTFBLsGLbj1d4-GRoNg_WHhdvyNB', // Chave pública do projeto
+      bucket: 'aula-fotos'
+    };
+
+    const STORAGE_KEYS = {
+      supabaseCfg: 'central_fju_supabase_cfg_v1',
+      localRecords: 'central_fju_records_v1',
+      exportedWeeks: 'central_fju_exported_weeks_v1',
+      selectedDay: 'central_fju_selected_day_v1',
+      customSchedule: 'central_fju_schedule_v1'
+    };
+
+    const ACCESS_PASSWORDS = {
+      professor: 'professor123',
+      admin: 'adm123'
+    };
+
+    const TIMEZONE = 'America/Sao_Paulo';
+    const PHOTO_RETENTION_DAYS = 14; // 2 semanas por segurança
+
+    /**
+     * =====================================================================
+     * LOGO FIXA DA CENTRAL FJU (GERAÇÃO DE ALTA DEFINIÇÃO SEM CORS)
+     * =====================================================================
+     */
+    let FIXED_CENTRAL_FJU_LOGO_DATA_URL = '';
+
+    function generateFixedCentralFjuLogoDataUrl() {
+      if (FIXED_CENTRAL_FJU_LOGO_DATA_URL) return FIXED_CENTRAL_FJU_LOGO_DATA_URL;
+
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const cx = size / 2;
+      const cy = size / 2;
+      const outerR = size / 2 - 4;
+
+      ctx.save();
+      // Recorte circular principal
+      ctx.beginPath();
+      ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+      ctx.clip();
+
+      // Fundo arquitetônico estilizado (fachada branca superior + faixa vermelha + base azul marinho FJU)
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, size);
+      bgGrad.addColorStop(0, '#DCE4F0');
+      bgGrad.addColorStop(0.24, '#B8C4D9');
+      bgGrad.addColorStop(0.25, '#D9142B');
+      bgGrad.addColorStop(0.42, '#A50B1E');
+      bgGrad.addColorStop(0.43, '#0B1B54');
+      bgGrad.addColorStop(1, '#040A24');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, size, size);
+
+      // Detalhes arquitetônicos da fachada
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+      for (let gx = 40; gx < size - 40; gx += 18) {
+        ctx.fillRect(gx, 32, 8, 86);
+      }
+
+      // Faixa vermelha característica do topo do prédio Central FJU
+      ctx.fillStyle = '#E11D2E';
+      ctx.beginPath();
+      ctx.roundRect(54, 102, size - 108, 66, 12);
+      ctx.fill();
+
+      // Detalhe branco horizontal na faixa vermelha
+      ctx.fillStyle = '#F8FAFC';
+      ctx.fillRect(156, 130, size - 212, 11);
+
+      // Base frontal azul com entrada e janelas
+      ctx.fillStyle = '#091542';
+      ctx.fillRect(54, 168, size - 108, 120);
+
+      // Porta de vidro / entrada FJU à esquerda
+      ctx.fillStyle = '#0E246E';
+      ctx.fillRect(82, 178, 118, 86);
+      ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(82, 178, 118, 86);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '900 18px Inter, Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('FJU', 141, 202);
+
+      // Janelas horizontais à direita
+      ctx.fillStyle = '#1E3A5F';
+      ctx.fillRect(216, 184, 148, 52);
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+      ctx.strokeRect(216, 184, 148, 52);
+
+      // Vinheta escura inferior para dar destaque ao texto CENTRAL FJU
+      const darkOverlay = ctx.createLinearGradient(0, 195, 0, size);
+      darkOverlay.addColorStop(0, 'rgba(5, 11, 38, 0.25)');
+      darkOverlay.addColorStop(0.45, 'rgba(5, 11, 38, 0.86)');
+      darkOverlay.addColorStop(1, 'rgba(3, 8, 28, 0.98)');
+      ctx.fillStyle = darkOverlay;
+      ctx.fillRect(0, 180, size, size - 180);
+
+      // Setas duplas vermelhas ">>" antes de CENTRAL
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 4;
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 4;
+      ctx.fillStyle = '#FF1E38';
+
+      const drawChevron = (ox, oy) => {
+        ctx.beginPath();
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(ox + 18, oy + 18);
+        ctx.lineTo(ox, oy + 36);
+        ctx.lineTo(ox - 8, oy + 28);
+        ctx.lineTo(ox + 3, oy + 18);
+        ctx.lineTo(ox - 8, oy + 8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      };
+      drawChevron(46, 250);
+      drawChevron(68, 250);
+      ctx.restore();
+
+      // Texto "CENTRAL" em branco 3D com contorno escuro/avermelhado
+      ctx.save();
+      ctx.font = '900 72px Inter, Arial, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.92)';
+      ctx.shadowBlur = 14;
+      ctx.shadowOffsetY = 5;
+      ctx.lineWidth = 7;
+      ctx.strokeStyle = '#3B0A14';
+      ctx.strokeText('CENTRAL', 98, 269);
+
+      const whiteGrad = ctx.createLinearGradient(0, 232, 0, 304);
+      whiteGrad.addColorStop(0, '#FFFFFF');
+      whiteGrad.addColorStop(0.75, '#F1F5F9');
+      whiteGrad.addColorStop(1, '#CBD5E1');
+      ctx.fillStyle = whiteGrad;
+      ctx.fillText('CENTRAL', 98, 269);
+      ctx.restore();
+
+      // Texto "FJU" em azul neon/ciano brilhante
+      ctx.save();
+      ctx.font = '900 132px Inter, Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = '#00E1FF';
+      ctx.shadowBlur = 28;
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = '#0077B6';
+      ctx.strokeText('FJU', cx + 14, 368);
+
+      const cyanGrad = ctx.createLinearGradient(0, 305, 0, 425);
+      cyanGrad.addColorStop(0, '#67E8F9');
+      cyanGrad.addColorStop(0.5, '#00E1FF');
+      cyanGrad.addColorStop(1, '#00A8E8');
+      ctx.fillStyle = cyanGrad;
+      ctx.fillText('FJU', cx + 14, 368);
+      ctx.restore();
+
+      // Emblema estilizado da águia/pássaro FJU sobre a perna esquerda do "F"
+      ctx.save();
+      ctx.shadowColor = '#00E1FF';
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = '#38BDF8';
+      ctx.beginPath();
+      ctx.moveTo(96, 326);
+      ctx.quadraticCurveTo(126, 336, 144, 326);
+      ctx.quadraticCurveTo(164, 314, 184, 318);
+      ctx.quadraticCurveTo(164, 344, 138, 348);
+      ctx.quadraticCurveTo(114, 350, 96, 326);
+      ctx.fill();
+      ctx.restore();
+
+      // Anel interno azul ciano neon e anel externo azul royal escuro
+      ctx.beginPath();
+      ctx.arc(cx, cy, outerR - 14, 0, Math.PI * 2);
+      ctx.lineWidth = 7;
+      ctx.strokeStyle = '#00D8FF';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, outerR - 4, 0, Math.PI * 2);
+      ctx.lineWidth = 14;
+      ctx.strokeStyle = '#071259';
+      ctx.stroke();
+
+      ctx.restore();
+
+      FIXED_CENTRAL_FJU_LOGO_DATA_URL = canvas.toDataURL('image/png');
+      return FIXED_CENTRAL_FJU_LOGO_DATA_URL;
+    }
+
+    /**
+     * =====================================================================
+     * 2. DIAS DA SEMANA & GRADE OFICIAL DE AULAS (CENTRAL FJU)
+     * =====================================================================
+     */
+    const DAYS_META = [
+      { code: 'DOM', name: 'Domingo', short: 'Dom', offset: 0 },
+      { code: 'SEG', name: 'Segunda-feira', short: 'Seg', offset: 1 },
+      { code: 'TER', name: 'Terça-feira', short: 'Ter', offset: 2 },
+      { code: 'QUA', name: 'Quarta-feira', short: 'Qua', offset: 3 },
+      { code: 'QUI', name: 'Quinta-feira', short: 'Qui', offset: 4 },
+      { code: 'SEX', name: 'Sexta-feira', short: 'Sex', offset: 5 },
+      { code: 'SAB', name: 'Sábado', short: 'Sáb', offset: 6 },
+    ];
+
+    const OFFICIAL_SCHEDULE = [
+      // Domingo
+      { id: 'dom-1300-ingles-inter', day: 'DOM', time: '13h00', name: 'Inglês intermediário' },
+      { id: 'dom-1330-ballet', day: 'DOM', time: '13h30', name: 'Ballet' },
+      { id: 'dom-1330-teclado', day: 'DOM', time: '13h30', name: 'Teclado' },
+      { id: 'dom-1400-biblia', day: 'DOM', time: '14h00', name: 'Descobrindo a Bíblia' },
+      { id: 'dom-1430-teatro', day: 'DOM', time: '14h30', name: 'Teatro' },
+      { id: 'dom-1500-ingles-bas', day: 'DOM', time: '15h00', name: 'Inglês Básico' },
+      { id: 'dom-1530-canto', day: 'DOM', time: '15h30', name: 'Canto' },
+      { id: 'dom-1600-workshop', day: 'DOM', time: '16h00', name: 'Workshop Universitário' },
+      { id: 'dom-1600-espanhol', day: 'DOM', time: '16h00', name: 'Espanhol' },
+      // Segunda-feira
+      { id: 'seg-1710-bateria', day: 'SEG', time: '17h10', name: 'Bateria' },
+      { id: 'seg-1730-contrabaixo', day: 'SEG', time: '17h30', name: 'Contrabaixo' },
+      { id: 'seg-1800-frances', day: 'SEG', time: '18h00', name: 'Francês' },
+      // Terça-feira
+      { id: 'ter-1700-violao', day: 'TER', time: '17h00', name: 'Violão' },
+      { id: 'ter-1800-guitarra', day: 'TER', time: '18h00', name: 'Guitarra' },
+      { id: 'ter-1800-teclado', day: 'TER', time: '18h00', name: 'Teclado' },
+      { id: 'ter-1800-fjudev', day: 'TER', time: '18h00', name: 'FJU DEV' },
+      { id: 'ter-2000-danca-contemp', day: 'TER', time: '20h00', name: 'Dança Conteporânea' },
+      // Quarta-feira
+      { id: 'qua-1800-biblia', day: 'QUA', time: '18h00', name: 'Descobrindo a Bíblia' },
+      // Quinta-feira
+      { id: 'qui-1730-contrabaixo-ini', day: 'QUI', time: '17h30', name: 'Contra Baixo Iniciante' },
+      { id: 'qui-1800-fjudev', day: 'QUI', time: '18h00', name: 'FJU DEV' },
+      // Sexta-feira
+      { id: 'sex-1700-informatica', day: 'SEX', time: '17h00', name: 'Informatica' },
+      { id: 'sex-1800-teatro', day: 'SEX', time: '18h00', name: 'Teatro' },
+      // Sábado
+      { id: 'sab-1000-enem', day: 'SAB', time: '10h00', name: 'Desafiando o Enem' },
+      { id: 'sab-1830-midia', day: 'SAB', time: '18h30', name: 'Oficina do Mídia' },
+      { id: 'sab-1830-teatro', day: 'SAB', time: '18h30', name: 'Teatro' },
+      { id: 'sab-1830-dancas-urbanas', day: 'SAB', time: '18h30', name: 'Danças Urbanas' },
+    ];
+
+    function loadScheduleFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEYS.customSchedule);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch (err) {
+        console.error('Erro ao ler grade de aulas:', err);
+      }
+      return OFFICIAL_SCHEDULE.map(item => ({ ...item }));
+    }
+
+    function saveScheduleToStorage(scheduleList) {
+      try {
+        localStorage.setItem(STORAGE_KEYS.customSchedule, JSON.stringify(scheduleList));
+      } catch (err) {
+        console.error('Erro ao salvar grade de aulas:', err);
+      }
+    }
+
+    /**
+     * =====================================================================
+     * 3. ESTADO GLOBAL DA APLICAÇÃO
+     * =====================================================================
+     */
+    const state = {
+      userRole: null, // 'professor' | 'admin'
+      schedule: [],
+      supabaseConfig: { ...DEFAULT_SUPABASE_CONFIG },
+      supabaseClient: null,
+      isSupabaseConnected: false,
+      currentWeekSundayStr: '',
+      selectedDayCode: 'DOM',
+      records: [],
+      exportedWeeks: {},
+      modalDraftPhotos: [],
+      confirmCallback: null,
+    };
+
+    /**
+     * =====================================================================
+     * 4. UTILITÁRIOS DE DATA & FUSO HORÁRIO (DOMINGO A SÁBADO)
+     * =====================================================================
+     */
+    function getTodayISOInTZ() {
+      try {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+          timeZone: TIMEZONE,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).formatToParts(new Date());
+        const y = parts.find(p => p.type === 'year').value;
+        const m = parts.find(p => p.type === 'month').value;
+        const d = parts.find(p => p.type === 'day').value;
+        return `${y}-${m}-${d}`;
+      } catch (err) {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+    }
+
+    function getCurrentDayCodeInTZ() {
+      const iso = getTodayISOInTZ();
+      const [y, m, d] = iso.split('-').map(Number);
+      const dt = new Date(Date.UTC(y, m - 1, d));
+      return DAYS_META[dt.getUTCDay()].code;
+    }
+
+    function parseISODateUTC(isoStr) {
+      const [y, m, d] = isoStr.split('-').map(Number);
+      return new Date(Date.UTC(y, m - 1, d));
+    }
+
+    function formatDateUTCtoISO(dateObj) {
+      const y = dateObj.getUTCFullYear();
+      const m = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+      const d = String(dateObj.getUTCDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function addDaysISO(isoStr, days) {
+      const dt = parseISODateUTC(isoStr);
+      dt.setUTCDate(dt.getUTCDate() + days);
+      return formatDateUTCtoISO(dt);
+    }
+
+    function getSundayOfWeek(isoStr) {
+      const dt = parseISODateUTC(isoStr);
+      const dayOfWeek = dt.getUTCDay(); // 0 = Domingo ... 6 = Sábado
+      dt.setUTCDate(dt.getUTCDate() - dayOfWeek);
+      return formatDateUTCtoISO(dt);
+    }
+
+    function formatDateBR(isoStr) {
+      if (!isoStr) return '';
+      const [y, m, d] = isoStr.split('-');
+      return `${d}/${m}/${y}`;
+    }
+
+    function getPhotoAgeDays(photoObj, fallbackDateStr) {
+      const refDate = photoObj.createdAt ? new Date(photoObj.createdAt) : parseISODateUTC(fallbackDateStr || getTodayISOInTZ());
+      const diffMs = Date.now() - refDate.getTime();
+      return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    }
+
+    function isPhotoExpired(photoObj, fallbackDateStr) {
+      return getPhotoAgeDays(photoObj, fallbackDateStr) >= PHOTO_RETENTION_DAYS;
+    }
+
+    function parseTimeMinutes(timeStr) {
+      const match = String(timeStr || '').toLowerCase().match(/(\d{1,2})h(\d{2})/);
+      if (!match) return 9999;
+      return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+    }
+
+    /**
+     * =====================================================================
+     * 5. NOTIFICAÇÕES & CONFIRMAÇÃO CUSTOMIZADA
+     * =====================================================================
+     */
+    let toastTimer = null;
+    function showToast(message, type = 'info') {
+      const banner = document.getElementById('toastBanner');
+      const inner = document.getElementById('toastInner');
+      const msg = document.getElementById('toastMessage');
+
+      inner.className = 'rounded-2xl px-4 py-3 shadow-2xl border backdrop-blur-md flex items-start justify-between gap-3 text-sm font-medium ';
+      if (type === 'error') {
+        inner.className += 'bg-red-950/95 border-fjuRed text-red-100';
+      } else if (type === 'success') {
+        inner.className += 'bg-emerald-950/95 border-emerald-400/60 text-emerald-100';
+      } else {
+        inner.className += 'bg-fjuNavy/95 border-fjuCyan/60 text-slate-100';
+      }
+
+      msg.textContent = message;
+      banner.classList.remove('hidden');
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        banner.classList.add('hidden');
+      }, 4500);
+    }
+
+    function openConfirm({ title, message, onConfirm }) {
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMessage').textContent = message;
+      state.confirmCallback = onConfirm;
+      const modal = document.getElementById('confirmModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeConfirm() {
+      state.confirmCallback = null;
+      const modal = document.getElementById('confirmModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    /**
+     * =====================================================================
+     * 6. CAMADA DE DADOS (SUPABASE COM FALLBACK EM LOCALSTORAGE)
+     * =====================================================================
+     */
+    function loadSavedSupabaseConfig() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEYS.supabaseCfg);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const cleanUrl = (parsed.url || DEFAULT_SUPABASE_CONFIG.url || '').trim().replace(/\/rest\/v1\/?$/i, '').replace(/\/+$/, '');
+          state.supabaseConfig = {
+            url: cleanUrl,
+            anonKey: (parsed.anonKey || DEFAULT_SUPABASE_CONFIG.anonKey || '').trim(),
+            bucket: (parsed.bucket || 'aula-fotos').trim() || 'aula-fotos',
+          };
+        }
+      } catch (err) {
+        console.error('Erro ao ler config do Supabase:', err);
+      }
+    }
+
+    function initSupabaseClient() {
+      const { url, anonKey } = state.supabaseConfig;
+      if (url && anonKey && window.supabase && typeof window.supabase.createClient === 'function') {
+        try {
+          state.supabaseClient = window.supabase.createClient(url, anonKey);
+          state.isSupabaseConnected = true;
+          updateConnectionBadge(true);
+          return;
+        } catch (err) {
+          console.error('Falha ao inicializar Supabase:', err);
+        }
+      }
+      state.supabaseClient = null;
+      state.isSupabaseConnected = false;
+      updateConnectionBadge(false);
+    }
+
+    function updateConnectionBadge(connected) {
+      const dot = document.getElementById('statusDot');
+      const label = document.getElementById('statusLabel');
+      const btn = document.getElementById('btnToggleSupabaseModal');
+      if (connected) {
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]';
+        label.textContent = 'Supabase Conectado';
+        btn.className = 'px-3 py-2 rounded-xl text-xs font-semibold border border-emerald-500/40 bg-emerald-950/50 text-emerald-200 hover:bg-emerald-900/60 transition flex items-center gap-2 cursor-pointer';
+      } else {
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+        label.textContent = 'Modo Local (Offline)';
+        btn.className = 'px-3 py-2 rounded-xl text-xs font-semibold border border-amber-500/40 bg-amber-950/40 text-amber-200 hover:bg-amber-900/50 transition flex items-center gap-2 cursor-pointer';
+      }
+    }
+
+    function readLocalRecords() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEYS.localRecords);
+        const list = raw ? JSON.parse(raw) : [];
+        return Array.isArray(list) ? list : [];
+      } catch (err) {
+        console.error('Erro ao ler registros locais:', err);
+        return [];
+      }
+    }
+
+    function writeLocalRecords(list) {
+      try {
+        localStorage.setItem(STORAGE_KEYS.localRecords, JSON.stringify(list));
+      } catch (err) {
+        console.error('Erro ao salvar no localStorage:', err);
+        showToast('Espaço local cheio. Tente reduzir ou apagar fotos antigas.', 'error');
+      }
+    }
+
+    function loadExportedWeeks() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEYS.exportedWeeks);
+        state.exportedWeeks = raw ? JSON.parse(raw) : {};
+      } catch (err) {
+        state.exportedWeeks = {};
+      }
+    }
+
+    function markWeekAsExported(sundayISO) {
+      state.exportedWeeks[sundayISO] = new Date().toISOString();
+      localStorage.setItem(STORAGE_KEYS.exportedWeeks, JSON.stringify(state.exportedWeeks));
+    }
+
+    async function fetchAllRecords() {
+      if (state.isSupabaseConnected && state.supabaseClient) {
+        try {
+          const { data, error } = await state.supabaseClient
+            .from('frequencia_aulas')
+            .select('*')
+            .order('lesson_date', { ascending: false });
+
+          if (error) throw error;
+          state.records = (data || []).map(normalizeRecordFromDB);
+          writeLocalRecords(state.records);
+          return;
+        } catch (err) {
+          console.error('Erro ao buscar no Supabase, usando cache local:', err);
+          showToast('Falha ao consultar Supabase; exibindo dados locais.', 'error');
+        }
+      }
+      state.records = readLocalRecords();
+    }
+
+    function normalizeRecordFromDB(row) {
+      return {
+        id: row.id,
+        classId: row.class_id || row.classId,
+        className: row.class_name || row.className,
+        dayCode: row.day_code || row.dayCode,
+        scheduledTime: row.scheduled_time || row.scheduledTime,
+        lessonDate: row.lesson_date || row.lessonDate,
+        totalStudents: Number(row.total_students ?? row.totalStudents ?? 0),
+        firstTimeStudents: Number(row.first_time_students ?? row.firstTimeStudents ?? 0),
+        theme: row.theme || '',
+        teacher: row.teacher || '',
+        photos: Array.isArray(row.photos) ? row.photos : [],
+        createdAt: row.created_at || row.createdAt || new Date().toISOString(),
+        updatedAt: row.updated_at || row.updatedAt || new Date().toISOString(),
+      };
+    }
+
+    function serializeRecordForDB(rec) {
+      return {
+        id: rec.id,
+        class_id: rec.classId,
+        class_name: rec.className,
+        day_code: rec.dayCode,
+        scheduled_time: rec.scheduledTime,
+        lesson_date: rec.lessonDate,
+        total_students: rec.totalStudents,
+        first_time_students: rec.firstTimeStudents,
+        theme: rec.theme,
+        teacher: rec.teacher,
+        photos: rec.photos,
+        updated_at: new Date().toISOString(),
+      };
+    }
+
+    async function saveOrUpdateRecord(record) {
+      const idx = state.records.findIndex(r => r.id === record.id);
+      if (idx >= 0) {
+        state.records[idx] = record;
+      } else {
+        state.records.push(record);
+      }
+      writeLocalRecords(state.records);
+
+      if (state.isSupabaseConnected && state.supabaseClient) {
+        try {
+          const payload = serializeRecordForDB(record);
+          const { error } = await state.supabaseClient
+            .from('frequencia_aulas')
+            .upsert(payload, { onConflict: 'id' });
+          if (error) throw error;
+        } catch (err) {
+          console.error('Erro ao salvar no Supabase:', err);
+          showToast('Salvo localmente, mas houve erro ao sincronizar com o Supabase.', 'error');
+        }
+      }
+    }
+
+    async function deleteRecordById(recordId) {
+      const target = state.records.find(r => r.id === recordId);
+      if (target && Array.isArray(target.photos) && target.photos.length > 0) {
+        await removePhotosFromStorage(target.photos);
+      }
+
+      state.records = state.records.filter(r => r.id !== recordId);
+      writeLocalRecords(state.records);
+
+      if (state.isSupabaseConnected && state.supabaseClient) {
+        try {
+          const { error } = await state.supabaseClient
+            .from('frequencia_aulas')
+            .delete()
+            .eq('id', recordId);
+          if (error) throw error;
+        } catch (err) {
+          console.error('Erro ao excluir no Supabase:', err);
+          showToast('Excluído localmente; verifique a exclusão no Supabase.', 'error');
+        }
+      }
+    }
+
+    /**
+     * =====================================================================
+     * 7. COMPRESSÃO & UPLOAD / REMOÇÃO DE FOTOS
+     * =====================================================================
+     */
+    function compressImageFile(file, maxWidth = 1024, quality = 0.72) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+            resolve({ dataUrl, width, height });
+          };
+          img.onerror = reject;
+          img.src = ev.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function uploadCompressedPhotoToSupabase(photoItem, lessonDate) {
+      if (!state.isSupabaseConnected || !state.supabaseClient || !photoItem.dataUrl) {
+        return {
+          id: photoItem.id,
+          name: photoItem.name,
+          url: photoItem.dataUrl,
+          storagePath: null,
+          createdAt: photoItem.createdAt || new Date().toISOString(),
+        };
+      }
+
+      try {
+        const res = await fetch(photoItem.dataUrl);
+        const blob = await res.blob();
+        const bucket = state.supabaseConfig.bucket || 'aula-fotos';
+        const filePath = `${lessonDate}/${photoItem.id}.jpg`;
+
+        const { error: uploadError } = await state.supabaseClient.storage
+          .from(bucket)
+          .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: pubData } = state.supabaseClient.storage
+          .from(bucket)
+          .getPublicUrl(filePath);
+
+        return {
+          id: photoItem.id,
+          name: photoItem.name,
+          url: pubData?.publicUrl || photoItem.dataUrl,
+          storagePath: filePath,
+          createdAt: photoItem.createdAt || new Date().toISOString(),
+        };
+      } catch (err) {
+        console.error('Erro no upload para Supabase Storage:', err);
+        showToast('Não foi possível enviar foto ao Storage; mantendo no registro.', 'error');
+        return {
+          id: photoItem.id,
+          name: photoItem.name,
+          url: photoItem.dataUrl,
+          storagePath: null,
+          createdAt: photoItem.createdAt || new Date().toISOString(),
+        };
+      }
+    }
+
+    async function removePhotosFromStorage(photos) {
+      if (!state.isSupabaseConnected || !state.supabaseClient) return;
+      const paths = (photos || [])
+        .map(p => p.storagePath)
+        .filter(Boolean);
+
+      if (paths.length === 0) return;
+
+      try {
+        const bucket = state.supabaseConfig.bucket || 'aula-fotos';
+        const { error } = await state.supabaseClient.storage.from(bucket).remove(paths);
+        if (error) throw error;
+      } catch (err) {
+        console.error('Erro ao remover fotos do Supabase Storage:', err);
+      }
+    }
+
+    /**
+     * =====================================================================
+     * 8. CONSULTAS DE SEMANA & DASHBOARD (DOMINGO A SÁBADO)
+     * =====================================================================
+     */
+    function getWeekRecords(sundayISO) {
+      const saturdayISO = addDaysISO(sundayISO, 6);
+      return state.records.filter(r => r.lessonDate >= sundayISO && r.lessonDate <= saturdayISO);
+    }
+
+    function getRecordForClassInWeek(classId, sundayISO) {
+      const saturdayISO = addDaysISO(sundayISO, 6);
+      return state.records.find(
+        r => r.classId === classId && r.lessonDate >= sundayISO && r.lessonDate <= saturdayISO
+      ) || null;
+    }
+
+    function renderWeekHeaderAndPolicy() {
+      const sundayISO = state.currentWeekSundayStr;
+      const saturdayISO = addDaysISO(sundayISO, 6);
+      const currentSundayISO = getSundayOfWeek(getTodayISOInTZ());
+
+      document.getElementById('weekRangeLabel').textContent =
+        `Dom ${formatDateBR(sundayISO)} — Sáb ${formatDateBR(saturdayISO)}`;
+
+      const subBadge = document.getElementById('weekBadgeSub');
+      if (sundayISO === currentSundayISO) {
+        subBadge.textContent = 'Semana Atual';
+      } else if (sundayISO < currentSundayISO) {
+        subBadge.textContent = 'Semana Anterior';
+      } else {
+        subBadge.textContent = 'Semana Futura';
+      }
+
+      // Status de exportação PDF e botão de limpar fotos
+      const weekRecords = getWeekRecords(sundayISO);
+      const totalWeekPhotos = weekRecords.reduce((acc, r) => acc + (Array.isArray(r.photos) ? r.photos.length : 0), 0);
+      const wasExported = Boolean(state.exportedWeeks[sundayISO]);
+
+      const pdfStatusEl = document.getElementById('pdfExportStatusText');
+      if (wasExported) {
+        const dt = new Date(state.exportedWeeks[sundayISO]);
+        pdfStatusEl.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span><span class="text-emerald-300 font-semibold">PDF exportado em ${dt.toLocaleString('pt-BR')} — fotos liberadas para limpeza.</span>`;
+      } else {
+        pdfStatusEl.innerHTML = '';
+      }
+
+      const btnDeletePhotos = document.getElementById('btnDeleteWeekPhotos');
+      const btnDeletePhotosText = document.getElementById('btnDeletePhotosText');
+      const canDeletePhotos = wasExported && totalWeekPhotos > 0;
+
+      btnDeletePhotos.disabled = !canDeletePhotos;
+      if (totalWeekPhotos === 0) {
+        btnDeletePhotosText.textContent = 'Sem Fotos na Semana';
+        btnDeletePhotos.className = 'px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold border border-red-500/50 bg-[#450A0A] text-red-200/60 flex items-center gap-2 disabled:opacity-45 disabled:cursor-not-allowed';
+      } else if (wasExported) {
+        btnDeletePhotosText.textContent = `Apagar Fotos (${totalWeekPhotos})`;
+        btnDeletePhotos.className = 'px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold border border-red-300/80 bg-red-600 hover:bg-red-500 text-white shadow-glowRed transition flex items-center gap-2 cursor-pointer';
+      } else {
+        btnDeletePhotosText.textContent = `Apagar Fotos (${totalWeekPhotos} — Exporte o PDF)`;
+        btnDeletePhotos.className = 'px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold border border-red-400/60 bg-[#450A0A] text-red-100/80 flex items-center gap-2 disabled:opacity-45 disabled:cursor-not-allowed';
+      }
+
+      // Alerta de fotos expiradas (>= 14 dias)
+      const hasExpired = state.records.some(r =>
+        (r.photos || []).some(p => isPhotoExpired(p, r.lessonDate))
+      );
+      const alertEl = document.getElementById('expiredPhotosAlert');
+      if (hasExpired) {
+        alertEl.classList.remove('hidden');
+        alertEl.classList.add('flex');
+      } else {
+        alertEl.classList.add('hidden');
+        alertEl.classList.remove('flex');
+      }
+    }
+
+    function renderDayTabsAndClasses() {
+      const containerTabs = document.getElementById('dayTabsContainer');
+      const sundayISO = state.currentWeekSundayStr;
+      const isAdmin = state.userRole === 'admin';
+      containerTabs.innerHTML = '';
+
+      DAYS_META.forEach((dayMeta) => {
+        const dayDateISO = addDaysISO(sundayISO, dayMeta.offset);
+        const dayClasses = state.schedule.filter(c => c.day === dayMeta.code);
+        const filledCount = dayClasses.filter(c => Boolean(getRecordForClassInWeek(c.id, sundayISO))).length;
+        const isSelected = state.selectedDayCode === dayMeta.code;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = isSelected
+          ? 'rounded-2xl p-3.5 text-left border-2 border-fjuCyan bg-gradient-to-br from-[#1D4ED8] to-[#1E3A8A] shadow-neonCyan transition cursor-pointer'
+          : 'rounded-2xl p-3.5 text-left border border-blue-600/60 bg-[#132F70] hover:border-blue-400 hover:bg-[#193B8A] transition cursor-pointer';
+
+        btn.innerHTML = `
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-xs font-black uppercase tracking-wider ${isSelected ? 'text-fjuCyan' : 'text-blue-200'}">${dayMeta.code}</span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${filledCount > 0 ? 'bg-emerald-500/25 text-emerald-300' : 'bg-blue-950/80 text-blue-300'}">
+              ${filledCount}/${dayClasses.length}
+            </span>
+          </div>
+          <p class="text-sm font-extrabold text-white mt-1">${dayMeta.short}</p>
+          <p class="text-[11px] text-blue-200/80 mt-0.5">${formatDateBR(dayDateISO).slice(0, 5)}</p>
+        `;
+
+        btn.addEventListener('click', () => {
+          state.selectedDayCode = dayMeta.code;
+          localStorage.setItem(STORAGE_KEYS.selectedDay, dayMeta.code);
+          renderDayTabsAndClasses();
+        });
+
+        containerTabs.appendChild(btn);
+      });
+
+      // Atualiza preview da data do dia selecionado
+      const activeDayMeta = DAYS_META.find(d => d.code === state.selectedDayCode) || DAYS_META[0];
+      const activeDateISO = addDaysISO(sundayISO, activeDayMeta.offset);
+      document.getElementById('selectedDayDatePreview').textContent =
+        `${activeDayMeta.name} • ${formatDateBR(activeDateISO)}`;
+
+      // Renderiza aulas do dia ordenadas por horário
+      const classesContainer = document.getElementById('dayClassesContainer');
+      classesContainer.innerHTML = '';
+
+      const dayClasses = state.schedule
+        .filter(c => c.day === state.selectedDayCode)
+        .sort((a, b) => parseTimeMinutes(a.time) - parseTimeMinutes(b.time) || a.name.localeCompare(b.name));
+
+      dayClasses.forEach((cls) => {
+        const rec = getRecordForClassInWeek(cls.id, sundayISO);
+        const card = document.createElement('div');
+        card.className = rec
+          ? 'rounded-2xl bg-[#07132E] border border-emerald-500/50 hover:border-fjuCyan p-4 transition flex flex-col justify-between gap-3 cursor-pointer shadow-lg'
+          : 'rounded-2xl bg-[#07132E]/95 border border-sky-800/70 hover:border-fjuCyan/70 p-4 transition flex flex-col justify-between gap-3 cursor-pointer';
+
+        const photosCount = rec && Array.isArray(rec.photos) ? rec.photos.length : 0;
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-[#0D214D] text-fjuCyan border border-fjuCyan/30">
+                ${escapeHTML(cls.time)}
+              </span>
+              <div class="flex items-center gap-1.5">
+                ${
+                  rec
+                    ? '<span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">✓ Preenchida</span>'
+                    : '<span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-sky-950 text-sky-300">Pendente</span>'
+                }
+                ${
+                  isAdmin
+                    ? `<button
+                        type="button"
+                        data-delete-class-id="${cls.id}"
+                        class="btn-delete-class p-1.5 rounded-lg bg-red-950/70 hover:bg-fjuRed text-red-300 hover:text-white border border-red-700/50 transition cursor-pointer"
+                        title="Excluir esta aula da grade"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>`
+                    : ''
+                }
+              </div>
+            </div>
+
+            <h3 class="text-base font-extrabold text-white mt-3">${escapeHTML(cls.name)}</h3>
+
+            ${
+              rec
+                ? `
+                  <p class="text-xs text-slate-300 mt-1.5 line-clamp-1"><strong class="text-slate-400">Tema:</strong> ${escapeHTML(rec.theme)}</p>
+                  <p class="text-xs text-slate-400 mt-0.5"><strong class="text-slate-400">Prof.:</strong> ${escapeHTML(rec.teacher)} • ${formatDateBR(rec.lessonDate)}</p>
+                `
+                : '<p class="text-xs text-slate-400 mt-1.5">Toque para lançar total de alunos, 1ª vez, tema, professor e data.</p>'
+            }
+          </div>
+
+          <div class="pt-3 border-t border-blue-900/60 flex items-center justify-between text-xs">
+            ${
+              rec
+                ? `
+                  <div class="flex items-center gap-3">
+                    <span class="font-extrabold text-white text-sm">${rec.totalStudents} <span class="text-[11px] font-normal text-slate-400">alunos</span></span>
+                    <span class="font-bold text-fjuCyan">${rec.firstTimeStudents} <span class="text-[11px] font-normal text-slate-400">1ª vez</span></span>
+                  </div>
+                  <span class="text-slate-400">${photosCount > 0 ? `📷 ${photosCount}` : 'Editar →'}</span>
+                `
+                : '<span class="font-bold text-fjuCyan">Registrar frequência →</span>'
+            }
+          </div>
+        `;
+
+        // Evento de exclusão da aula (Administrador)
+        const delBtn = card.querySelector('.btn-delete-class');
+        if (delBtn) {
+          delBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openConfirm({
+              title: 'Excluir Aula da Grade',
+              message: `Tem certeza de que deseja excluir permanentemente a aula "${cls.name}" (${cls.time}) de ${activeDayMeta.name}?`,
+              onConfirm: () => {
+                state.schedule = state.schedule.filter(item => item.id !== cls.id);
+                saveScheduleToStorage(state.schedule);
+                renderDayTabsAndClasses();
+                showToast(`Aula "${cls.name}" excluída com sucesso.`, 'success');
+              }
+            });
+          });
+        }
+
+        card.addEventListener('click', () => openAttendanceModal(cls, rec, activeDateISO));
+        classesContainer.appendChild(card);
+      });
+
+      // Card especial para criar uma nova aula no dia (apenas Administrador)
+      if (isAdmin) {
+        const addCard = document.createElement('button');
+        addCard.type = 'button';
+        addCard.className = 'rounded-2xl bg-[#07132E]/60 hover:bg-[#0B1E47] border-2 border-dashed border-fjuCyan/50 hover:border-fjuCyan p-5 transition flex flex-col items-center justify-center text-center gap-2 min-h-[168px] cursor-pointer group';
+        addCard.innerHTML = `
+          <div class="w-11 h-11 rounded-full bg-fjuCyan/15 group-hover:bg-fjuCyan/25 border border-fjuCyan/50 flex items-center justify-center text-fjuCyan text-2xl font-black transition">
+            +
+          </div>
+          <p class="text-sm font-extrabold text-white">Criar Nova Aula</p>
+          <p class="text-xs text-slate-400">Adicionar aula em ${activeDayMeta.name}</p>
+        `;
+        addCard.addEventListener('click', () => openNewClassModal(activeDayMeta));
+        classesContainer.appendChild(addCard);
+      }
+    }
+
+    function renderDashboardAndRanking() {
+      const sundayISO = state.currentWeekSundayStr;
+      const weekRecords = getWeekRecords(sundayISO);
+
+      const totalStudents = weekRecords.reduce((sum, r) => sum + Number(r.totalStudents || 0), 0);
+      const firstTimeStudents = weekRecords.reduce((sum, r) => sum + Number(r.firstTimeStudents || 0), 0);
+      const returningStudents = Math.max(0, totalStudents - firstTimeStudents);
+      const totalPhotos = weekRecords.reduce((sum, r) => sum + (Array.isArray(r.photos) ? r.photos.length : 0), 0);
+      const pctFirstTime = totalStudents > 0 ? ((firstTimeStudents / totalStudents) * 100).toFixed(1) : '0.0';
+
+      document.getElementById('kpiTotalStudents').textContent = totalStudents;
+      document.getElementById('kpiClassesCount').textContent = `${weekRecords.length} aula(s) lançada(s) na semana`;
+      document.getElementById('kpiFirstTimeStudents').textContent = firstTimeStudents;
+      document.getElementById('kpiFirstTimePercent').textContent = `${pctFirstTime}% do total da semana`;
+      document.getElementById('kpiReturningStudents').textContent = returningStudents;
+      document.getElementById('kpiWeekPhotos').textContent = totalPhotos;
+
+      // Ordena do maior para o menor em quantidade total de alunos
+      const ranked = [...weekRecords].sort((a, b) => {
+        if (b.totalStudents !== a.totalStudents) return b.totalStudents - a.totalStudents;
+        return b.firstTimeStudents - a.firstTimeStudents;
+      });
+
+      document.getElementById('rankingCountBadge').textContent = `${ranked.length} aula(s) no ranking`;
+
+      const emptyState = document.getElementById('rankingEmptyState');
+      const tableWrapper = document.getElementById('rankingTableWrapper');
+      const tbody = document.getElementById('rankingTableBody');
+
+      if (ranked.length === 0) {
+        emptyState.classList.remove('hidden');
+        tableWrapper.classList.add('hidden');
+        tbody.innerHTML = '';
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      tableWrapper.classList.remove('hidden');
+      tbody.innerHTML = '';
+
+      ranked.forEach((rec, index) => {
+        const pos = index + 1;
+        let medalBadge = `<span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#0B3829] text-emerald-200 font-extrabold text-xs">${pos}º</span>`;
+        if (pos === 1) {
+          medalBadge = `<span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-amber-400/20 text-amber-300 border border-amber-400/50 font-black text-xs">1º</span>`;
+        } else if (pos === 2) {
+          medalBadge = `<span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-300/20 text-slate-200 border border-slate-300/40 font-black text-xs">2º</span>`;
+        } else if (pos === 3) {
+          medalBadge = `<span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-orange-500/20 text-orange-300 border border-orange-400/40 font-black text-xs">3º</span>`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-emerald-900/30 transition';
+        tr.innerHTML = `
+          <td class="py-3.5 px-4">${medalBadge}</td>
+          <td class="py-3.5 px-4 font-bold text-white">${escapeHTML(rec.className)}</td>
+          <td class="py-3.5 px-4 text-xs text-emerald-100/80 whitespace-nowrap">${escapeHTML(rec.dayCode)} • ${escapeHTML(rec.scheduledTime)}</td>
+          <td class="py-3.5 px-4 text-xs text-emerald-100/80 whitespace-nowrap">${formatDateBR(rec.lessonDate)}</td>
+          <td class="py-3.5 px-4 text-xs text-emerald-50">${escapeHTML(rec.teacher)}</td>
+          <td class="py-3.5 px-4 text-xs text-emerald-100/80 max-w-xs truncate" title="${escapeHTML(rec.theme)}">${escapeHTML(rec.theme)}</td>
+          <td class="py-3.5 px-4 text-right font-bold text-emerald-300">${rec.firstTimeStudents}</td>
+          <td class="py-3.5 px-4 text-right font-black text-white text-base">${rec.totalStudents}</td>
+          <td class="py-3.5 px-4 text-center">
+            <button
+              type="button"
+              data-edit-id="${rec.id}"
+              class="btn-edit-ranked px-2.5 py-1 rounded-lg text-xs font-bold bg-[#0D3D2D] hover:bg-emerald-700 text-emerald-200 hover:text-white border border-emerald-600/50 transition cursor-pointer"
+            >
+              Editar
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      tbody.querySelectorAll('.btn-edit-ranked').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const recId = btn.getAttribute('data-edit-id');
+          const found = state.records.find(r => r.id === recId);
+          if (!found) return;
+          const cls = state.schedule.find(c => c.id === found.classId) || {
+            id: found.classId,
+            day: found.dayCode,
+            time: found.scheduledTime,
+            name: found.className,
+          };
+          openAttendanceModal(cls, found, found.lessonDate);
+        });
+      });
+    }
+
+    /**
+     * =====================================================================
+     * 9. MODAL DE FORMULÁRIO DA AULA
+     * =====================================================================
+     */
+    function openAttendanceModal(cls, existingRecord, defaultDateISO) {
+      const dayMeta = DAYS_META.find(d => d.code === cls.day) || DAYS_META[0];
+      document.getElementById('modalClassMeta').textContent = `${dayMeta.name} • ${cls.time}`;
+      document.getElementById('modalClassTitle').textContent = cls.name;
+      document.getElementById('formClassId').value = cls.id;
+      document.getElementById('formRecordId').value = existingRecord ? existingRecord.id : '';
+
+      document.getElementById('inputTotalStudents').value = existingRecord ? existingRecord.totalStudents : '';
+      document.getElementById('inputFirstTimeStudents').value = existingRecord ? existingRecord.firstTimeStudents : '';
+      document.getElementById('inputLessonDate').value = existingRecord ? existingRecord.lessonDate : defaultDateISO;
+      document.getElementById('inputLessonTheme').value = existingRecord ? existingRecord.theme : '';
+      document.getElementById('inputTeacherName').value = existingRecord ? existingRecord.teacher : '';
+
+      state.modalDraftPhotos = existingRecord && Array.isArray(existingRecord.photos)
+        ? existingRecord.photos.map(p => ({ ...p }))
+        : [];
+
+      const delBtn = document.getElementById('btnDeleteRecord');
+      if (existingRecord) {
+        delBtn.classList.remove('hidden');
+      } else {
+        delBtn.classList.add('hidden');
+      }
+
+      validateStudentCounts();
+      renderModalPhotos(existingRecord ? existingRecord.lessonDate : defaultDateISO);
+
+      const modal = document.getElementById('attendanceModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeAttendanceModal() {
+      const modal = document.getElementById('attendanceModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      state.modalDraftPhotos = [];
+    }
+
+    function validateStudentCounts() {
+      const totalVal = parseInt(document.getElementById('inputTotalStudents').value || '0', 10);
+      const firstVal = parseInt(document.getElementById('inputFirstTimeStudents').value || '0', 10);
+      const warn = document.getElementById('validationWarning');
+      if (!Number.isNaN(totalVal) && !Number.isNaN(firstVal) && firstVal > totalVal) {
+        warn.classList.remove('hidden');
+        return false;
+      }
+      warn.classList.add('hidden');
+      return true;
+    }
+
+    function renderModalPhotos(lessonDateStr) {
+      const container = document.getElementById('modalPhotosPreview');
+      container.innerHTML = '';
+
+      if (state.modalDraftPhotos.length === 0) {
+        container.innerHTML = '<p class="col-span-full text-xs text-slate-500">Nenhuma foto anexada neste lançamento.</p>';
+        return;
+      }
+
+      state.modalDraftPhotos.forEach((photo, idx) => {
+        const ageDays = getPhotoAgeDays(photo, lessonDateStr);
+        const expired = ageDays >= PHOTO_RETENTION_DAYS;
+        const src = photo.dataUrl || photo.url;
+
+        const item = document.createElement('div');
+        item.className = 'relative group rounded-xl overflow-hidden border border-blue-800/80 bg-fjuDark aspect-video';
+        item.innerHTML = `
+          <img src="${src}" alt="Foto da aula" class="w-full h-full object-cover" />
+          <span class="absolute bottom-1.5 left-1.5 text-[10px] font-bold px-2 py-0.5 rounded-md ${expired ? 'bg-fjuRed text-white' : 'bg-black/75 text-slate-200'}">
+            ${expired ? `${ageDays}d (Expirada)` : `${Math.max(0, PHOTO_RETENTION_DAYS - ageDays)}d restantes`}
+          </span>
+          <button
+            type="button"
+            data-photo-idx="${idx}"
+            class="btn-remove-draft-photo absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/80 hover:bg-fjuRed text-white text-xs font-bold flex items-center justify-center transition cursor-pointer"
+            title="Remover foto"
+          >
+            ✕
+          </button>
+        `;
+        container.appendChild(item);
+      });
+
+      container.querySelectorAll('.btn-remove-draft-photo').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const i = Number(btn.getAttribute('data-photo-idx'));
+          state.modalDraftPhotos.splice(i, 1);
+          renderModalPhotos(lessonDateStr);
+        });
+      });
+    }
+
+    function applyAccessRole(role) {
+      state.userRole = role;
+      const mainContent = document.getElementById('appMainContent');
+      const weekSection = document.getElementById('adminWeekSection');
+      const dashboardSection = document.getElementById('adminDashboardSection');
+      const roleBadge = document.getElementById('roleBadge');
+      const switchBtn = document.getElementById('btnSwitchRole');
+      const supBtn = document.getElementById('btnToggleSupabaseModal');
+
+      mainContent.classList.remove('hidden');
+      roleBadge.classList.remove('hidden');
+      switchBtn.classList.remove('hidden');
+
+      if (role === 'admin') {
+        weekSection.classList.remove('hidden');
+        dashboardSection.classList.remove('hidden');
+        supBtn.classList.remove('hidden');
+        roleBadge.textContent = 'Administrador';
+        roleBadge.className = 'px-3 py-1.5 rounded-xl text-xs font-extrabold uppercase tracking-wider border border-emerald-400/50 bg-emerald-500/15 text-emerald-300';
+      } else {
+        // Acesso do Professor: exibe apenas o campo azul de lançamento das aulas
+        weekSection.classList.add('hidden');
+        dashboardSection.classList.add('hidden');
+        supBtn.classList.add('hidden');
+        roleBadge.textContent = 'Professor';
+        roleBadge.className = 'px-3 py-1.5 rounded-xl text-xs font-extrabold uppercase tracking-wider border border-fjuCyan/50 bg-fjuCyan/15 text-fjuCyan';
+        state.currentWeekSundayStr = getSundayOfWeek(getTodayISOInTZ());
+      }
+
+      renderAll();
+    }
+
+    function openAuthModal() {
+      const authModal = document.getElementById('authModal');
+      const pwdInput = document.getElementById('inputAccessPassword');
+      const errEl = document.getElementById('authErrorMsg');
+      pwdInput.value = '';
+      errEl.classList.add('hidden');
+      authModal.classList.remove('hidden');
+      authModal.classList.add('flex');
+      setTimeout(() => pwdInput.focus(), 50);
+    }
+
+    function closeAuthModal() {
+      const authModal = document.getElementById('authModal');
+      authModal.classList.add('hidden');
+      authModal.classList.remove('flex');
+    }
+
+    function openNewClassModal(dayMeta) {
+      document.getElementById('newClassDayBadge').textContent = `${dayMeta.code} • ${dayMeta.name}`;
+      document.getElementById('inputNewClassName').value = '';
+      document.getElementById('inputNewClassTime').value = '';
+      const modal = document.getElementById('newClassModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => document.getElementById('inputNewClassName').focus(), 50);
+    }
+
+    function closeNewClassModal() {
+      const modal = document.getElementById('newClassModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function renderAll() {
+      renderWeekHeaderAndPolicy();
+      renderDayTabsAndClasses();
+      renderDashboardAndRanking();
+    }
+
+    /**
+     * =====================================================================
+     * 10. EXPORTAÇÃO EM PDF (CARDS POR AULA COM FOTOS) & LIMPEZA DE FOTOS
+     * =====================================================================
+     */
+    function loadImageAsDataUrlForPDF(url) {
+      return new Promise((resolve) => {
+        if (!url) {
+          resolve(null);
+          return;
+        }
+        if (url.startsWith('data:image/')) {
+          resolve(url);
+          return;
+        }
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth || img.width || 640;
+            canvas.height = img.naturalHeight || img.height || 480;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.8));
+          } catch (e) {
+            resolve(null);
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = url;
+      });
+    }
+
+    function drawWrappedText(doc, text, x, y, maxWidth, lineHeight, maxLines) {
+      const lines = doc.splitTextToSize(String(text || ''), maxWidth);
+      const sliced = lines.slice(0, maxLines);
+      if (lines.length > maxLines && sliced.length > 0) {
+        const last = sliced[sliced.length - 1];
+        sliced[sliced.length - 1] = last.length > 3 ? `${last.slice(0, -3)}...` : last;
+      }
+      doc.text(sliced, x, y);
+      return sliced.length * lineHeight;
+    }
+
+    async function exportWeeklyPDF() {
+      const btnExport = document.getElementById('btnExportPdf');
+      const originalBtnHTML = btnExport.innerHTML;
+      btnExport.disabled = true;
+      btnExport.innerHTML = '<span>Gerando PDF com cards...</span>';
+
+      const sundayISO = state.currentWeekSundayStr;
+      const saturdayISO = addDaysISO(sundayISO, 6);
+      const weekRecords = getWeekRecords(sundayISO);
+
+      const totalStudents = weekRecords.reduce((s, r) => s + Number(r.totalStudents || 0), 0);
+      const firstTimeStudents = weekRecords.reduce((s, r) => s + Number(r.firstTimeStudents || 0), 0);
+      const returningStudents = Math.max(0, totalStudents - firstTimeStudents);
+
+      const ranked = [...weekRecords].sort((a, b) => {
+        if (b.totalStudents !== a.totalStudents) return b.totalStudents - a.totalStudents;
+        return b.firstTimeStudents - a.firstTimeStudents;
+      });
+
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const marginX = 14;
+        const contentW = pageWidth - marginX * 2;
+        let y = 14;
+
+        // Cabeçalho institucional Central FJU
+        doc.setFillColor(9, 19, 71); // #091347
+        doc.rect(0, 0, pageWidth, 34, 'F');
+        doc.setFillColor(225, 29, 46); // #E11D2E faixa vermelha
+        doc.rect(0, 34, pageWidth, 1.5, 'F');
+
+        // Logo fixa da Central FJU no canto superior direito do cabeçalho
+        const logoSize = 23;
+        const logoX = pageWidth - marginX - logoSize;
+        const logoY = 5.5;
+        const fixedLogoDataUrl = generateFixedCentralFjuLogoDataUrl();
+        if (fixedLogoDataUrl) {
+          try {
+            doc.addImage(fixedLogoDataUrl, 'PNG', logoX, logoY, logoSize, logoSize);
+          } catch (_) {
+            // Ignora falha eventual de imagem
+          }
+        }
+
+        const textStartX = marginX;
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text('CENTRAL FJU — RELATÓRIO SEMANAL DE FREQUÊNCIA', textStartX, 13.5);
+
+        doc.setTextColor(0, 225, 255);
+        doc.setFontSize(9.5);
+        doc.text(`Período Oficial: Domingo (${formatDateBR(sundayISO)}) a Sábado (${formatDateBR(saturdayISO)})`, textStartX, 21);
+
+        doc.setTextColor(203, 213, 225);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.text(`Frequência de aulas • Emitido em: ${new Date().toLocaleString('pt-BR')} • Aulas: ${ranked.length}`, textStartX, 28);
+
+        y = 43;
+
+        // Resumo de Indicadores (KPI Cards)
+        doc.setTextColor(15, 23, 42);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text('Resumo Consolidado da Semana', marginX, y);
+        y += 5;
+
+        const gap = 3.5;
+        const boxW = (contentW - gap * 3) / 4;
+        const kpis = [
+          { label: 'TOTAL DE ALUNOS', value: String(totalStudents), accent: [9, 19, 71] },
+          { label: '1ª VEZ NA AULA', value: String(firstTimeStudents), accent: [0, 140, 210] },
+          { label: 'RECORRENTES', value: String(returningStudents), accent: [16, 140, 90] },
+          { label: 'AULAS LANÇADAS', value: String(ranked.length), accent: [225, 29, 46] },
+        ];
+
+        kpis.forEach((kpi, i) => {
+          const bx = marginX + i * (boxW + gap);
+          doc.setFillColor(248, 250, 252);
+          doc.setDrawColor(203, 213, 225);
+          doc.roundedRect(bx, y, boxW, 18, 2.5, 2.5, 'FD');
+
+          doc.setFillColor(...kpi.accent);
+          doc.rect(bx, y + 2, 1.4, 14, 'F');
+
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(71, 85, 105);
+          doc.text(kpi.label, bx + 4, y + 6.5);
+
+          doc.setFontSize(13.5);
+          doc.setTextColor(9, 19, 71);
+          doc.text(kpi.value, bx + 4, y + 14.2);
+        });
+
+        y += 26;
+
+        // Título da seção de Cards das Aulas (Ranking)
+        doc.setFontSize(11.5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(15, 23, 42);
+        doc.text('Ranking das Aulas (Maior para Menor) — Detalhes e Registros Fotográficos', marginX, y);
+        y += 5.5;
+
+        if (ranked.length === 0) {
+          doc.setFillColor(248, 250, 252);
+          doc.setDrawColor(203, 213, 225);
+          doc.roundedRect(marginX, y, contentW, 20, 3, 3, 'FD');
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9.5);
+          doc.setTextColor(100, 116, 139);
+          doc.text('Nenhum lançamento registrado neste período de domingo a sábado.', marginX + 6, y + 11.5);
+        } else {
+          for (let idx = 0; idx < ranked.length; idx++) {
+            const rec = ranked[idx];
+            const pos = idx + 1;
+            const recTotal = Number(rec.totalStudents || 0);
+            const recFirst = Number(rec.firstTimeStudents || 0);
+            const recRecurring = Math.max(0, recTotal - recFirst);
+
+            const rawPhotos = Array.isArray(rec.photos) ? rec.photos : [];
+            const loadedPhotos = [];
+            for (const p of rawPhotos.slice(0, 4)) {
+              const dataUrl = await loadImageAsDataUrlForPDF(p.dataUrl || p.url);
+              if (dataUrl) loadedPhotos.push(dataUrl);
+            }
+
+            const cardHeight = 56;
+
+            // Quebra de página limpa evitando cortar o card no meio
+            if (y + cardHeight > pageHeight - 14) {
+              doc.addPage();
+              y = 16;
+            }
+
+            // Container principal do Card
+            doc.setFillColor(255, 255, 255);
+            doc.setDrawColor(190, 204, 224);
+            doc.setLineWidth(0.35);
+            doc.roundedRect(marginX, y, contentW, cardHeight, 3, 3, 'FD');
+
+            // Faixa superior do card (azul marinho escuro)
+            doc.setFillColor(9, 19, 71);
+            doc.roundedRect(marginX, y, contentW, 10.5, 3, 3, 'F');
+            doc.rect(marginX, y + 6, contentW, 4.5, 'F');
+
+            // Selo de posição no ranking (1º, 2º, 3º...)
+            if (pos === 1) doc.setFillColor(245, 158, 11);
+            else if (pos === 2) doc.setFillColor(148, 163, 184);
+            else if (pos === 3) doc.setFillColor(217, 119, 6);
+            else doc.setFillColor(0, 184, 255);
+
+            doc.roundedRect(marginX + 3, y + 1.8, 11, 6.8, 1.5, 1.5, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8.5);
+            doc.setTextColor(9, 19, 71);
+            doc.text(`${pos}º`, marginX + 8.5, y + 6.4, { align: 'center' });
+
+            // Nome da Aula no cabeçalho do card
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.text(truncateText(rec.className, 40), marginX + 17, y + 6.6);
+
+            // Dia, horário e data à direita do cabeçalho do card
+            doc.setTextColor(0, 225, 255);
+            doc.setFontSize(8.5);
+            doc.text(
+              `${rec.dayCode} • ${rec.scheduledTime} • ${formatDateBR(rec.lessonDate)}`,
+              marginX + contentW - 4,
+              y + 6.6,
+              { align: 'right' }
+            );
+
+            // Área interna dividida: Esquerda (Informações + Métricas) | Direita (Foto(s))
+            const photoAreaW = 62;
+            const infoAreaW = contentW - photoAreaW - 10;
+            const infoX = marginX + 4;
+            let infoY = y + 16;
+
+            // Professor
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.setTextColor(71, 85, 105);
+            doc.text('Professor:', infoX, infoY);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(15, 23, 42);
+            doc.text(truncateText(rec.teacher, 48), infoX + 16.5, infoY);
+
+            infoY += 5.5;
+
+            // Tema da aula (com quebra automática até 2 linhas)
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(71, 85, 105);
+            doc.text('Tema:', infoX, infoY);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(15, 23, 42);
+            drawWrappedText(doc, rec.theme, infoX + 11, infoY, infoAreaW - 12, 4, 2);
+
+            // Pills de métricas na base esquerda do card
+            const pillsY = y + cardHeight - 15.5;
+            const pillGap = 2.5;
+            const pillW = (infoAreaW - pillGap * 2) / 3;
+            const pills = [
+              { label: 'TOTAL ALUNOS', val: String(recTotal), bg: [239, 246, 255], border: [147, 197, 253], text: [9, 19, 71] },
+              { label: '1ª VEZ', val: String(recFirst), bg: [236, 254, 255], border: [103, 232, 249], text: [14, 116, 144] },
+              { label: 'RECORRENTES', val: String(recRecurring), bg: [236, 253, 245], border: [110, 231, 183], text: [6, 95, 70] },
+            ];
+
+            pills.forEach((pill, pIdx) => {
+              const px = infoX + pIdx * (pillW + pillGap);
+              doc.setFillColor(...pill.bg);
+              doc.setDrawColor(...pill.border);
+              doc.roundedRect(px, pillsY, pillW, 12, 1.8, 1.8, 'FD');
+
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(6.2);
+              doc.setTextColor(71, 85, 105);
+              doc.text(pill.label, px + pillW / 2, pillsY + 4.2, { align: 'center' });
+
+              doc.setFontSize(10.5);
+              doc.setTextColor(...pill.text);
+              doc.text(pill.val, px + pillW / 2, pillsY + 9.8, { align: 'center' });
+            });
+
+            // Área das Fotos à direita do card
+            const photoBoxX = marginX + contentW - photoAreaW - 3.5;
+            const photoBoxY = y + 13;
+            const photoBoxH = cardHeight - 16.5;
+
+            doc.setFillColor(241, 245, 249);
+            doc.setDrawColor(203, 213, 225);
+            doc.roundedRect(photoBoxX, photoBoxY, photoAreaW, photoBoxH, 2, 2, 'FD');
+
+            if (loadedPhotos.length === 0) {
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(7.5);
+              doc.setTextColor(100, 116, 139);
+              doc.text('Sem foto anexada', photoBoxX + photoAreaW / 2, photoBoxY + photoBoxH / 2 + 1, { align: 'center' });
+            } else if (loadedPhotos.length === 1) {
+              try {
+                doc.addImage(loadedPhotos[0], 'JPEG', photoBoxX + 1, photoBoxY + 1, photoAreaW - 2, photoBoxH - 2);
+              } catch (_) {
+                doc.setFontSize(7.5);
+                doc.setTextColor(100, 116, 139);
+                doc.text('Foto indisponível', photoBoxX + photoAreaW / 2, photoBoxY + photoBoxH / 2, { align: 'center' });
+              }
+            } else {
+              // Grade 2x2 para 2 a 4 fotos dentro do card
+              const subW = (photoAreaW - 3) / 2;
+              const subH = (photoBoxH - 3) / 2;
+              loadedPhotos.forEach((imgData, imgIdx) => {
+                const col = imgIdx % 2;
+                const row = Math.floor(imgIdx / 2);
+                const ix = photoBoxX + 1 + col * (subW + 1);
+                const iy = photoBoxY + 1 + row * (subH + 1);
+                try {
+                  doc.addImage(imgData, 'JPEG', ix, iy, subW, subH);
+                } catch (_) {
+                  // Ignora falha individual de imagem
+                }
+              });
+
+              if (rawPhotos.length > 4) {
+                doc.setFillColor(9, 19, 71);
+                doc.roundedRect(photoBoxX + photoAreaW - 13, photoBoxY + photoBoxH - 6, 12, 5, 1, 1, 'F');
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(6.5);
+                doc.setTextColor(255, 255, 255);
+                doc.text(`+${rawPhotos.length - 4}`, photoBoxX + photoAreaW - 7, photoBoxY + photoBoxH - 2.5, { align: 'center' });
+              }
+            }
+
+            y += cardHeight + 4.5;
+          }
+        }
+
+        const fileName = `Relatorio-Central-FJU-${sundayISO}-a-${saturdayISO}.pdf`;
+        doc.save(fileName);
+
+        markWeekAsExported(sundayISO);
+        renderAll();
+        showToast('PDF exportado com cards e fotos! As fotos da semana já podem ser apagadas.', 'success');
+      } catch (err) {
+        console.error('Erro ao gerar PDF:', err);
+        showToast('Erro ao gerar o PDF. Tente novamente.', 'error');
+      } finally {
+        btnExport.disabled = false;
+        btnExport.innerHTML = originalBtnHTML;
+      }
+    }
+
+    function handleDeleteWeekPhotos() {
+      const sundayISO = state.currentWeekSundayStr;
+      const saturdayISO = addDaysISO(sundayISO, 6);
+      const weekRecords = getWeekRecords(sundayISO);
+      const photoCount = weekRecords.reduce((s, r) => s + (Array.isArray(r.photos) ? r.photos.length : 0), 0);
+
+      if (!state.exportedWeeks[sundayISO]) {
+        showToast('Exporte o relatório em PDF desta semana antes de apagar as fotos.', 'info');
+        return;
+      }
+
+      if (photoCount === 0) {
+        showToast('Não há fotos para apagar nesta semana.', 'info');
+        return;
+      }
+
+      openConfirm({
+        title: 'Apagar Fotos da Semana',
+        message: `O relatório da semana (${formatDateBR(sundayISO)} a ${formatDateBR(saturdayISO)}) já foi exportado. Deseja apagar permanentemente ${photoCount} foto(s) desta semana? Os números de frequência, tema e professor serão mantidos.`,
+        onConfirm: async () => {
+          const allWeekPhotos = weekRecords.flatMap(r => r.photos || []);
+          await removePhotosFromStorage(allWeekPhotos);
+
+          for (const rec of weekRecords) {
+            if (Array.isArray(rec.photos) && rec.photos.length > 0) {
+              const updated = { ...rec, photos: [] };
+              await saveOrUpdateRecord(updated);
+            }
+          }
+
+          renderAll();
+          showToast(`${photoCount} foto(s) da semana removida(s) com sucesso.`, 'success');
+        }
+      });
+    }
+
+    function truncateText(str, maxLen) {
+      const clean = String(str || '');
+      return clean.length > maxLen ? `${clean.slice(0, maxLen - 1)}…` : clean;
+    }
+
+    function escapeHTML(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    /**
+     * =====================================================================
+     * 11. LOGO FIXA & EVENT LISTENERS
+     * =====================================================================
+     */
+    function applyFixedLogo() {
+      const fixedLogo = generateFixedCentralFjuLogoDataUrl();
+      const imgEl = document.getElementById('brandLogoImg');
+      if (imgEl) imgEl.src = fixedLogo;
+      const authImgEl = document.getElementById('authModalLogoImg');
+      if (authImgEl) authImgEl.src = fixedLogo;
+    }
+
+    function bindEvents() {
+      // Autenticação por senha ao abrir o sistema
+      document.getElementById('authForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const typedPwd = document.getElementById('inputAccessPassword').value.trim();
+        const errEl = document.getElementById('authErrorMsg');
+
+        if (typedPwd === ACCESS_PASSWORDS.admin) {
+          errEl.classList.add('hidden');
+          closeAuthModal();
+          applyAccessRole('admin');
+          showToast('Acesso de Administrador liberado.', 'success');
+        } else if (typedPwd === ACCESS_PASSWORDS.professor) {
+          errEl.classList.add('hidden');
+          closeAuthModal();
+          applyAccessRole('professor');
+          showToast('Acesso de Professor liberado.', 'success');
+        } else {
+          errEl.classList.remove('hidden');
+          document.getElementById('inputAccessPassword').select();
+        }
+      });
+
+      document.getElementById('btnSwitchRole').addEventListener('click', () => {
+        openAuthModal();
+      });
+
+      // Modal Criar Nova Aula (Administrador)
+      document.getElementById('btnCloseNewClassModal').addEventListener('click', closeNewClassModal);
+      document.getElementById('btnCancelNewClass').addEventListener('click', closeNewClassModal);
+      document.getElementById('newClassForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (state.userRole !== 'admin') return;
+
+        const name = document.getElementById('inputNewClassName').value.trim();
+        const time = document.getElementById('inputNewClassTime').value.trim();
+        if (!name || !time) return;
+
+        const newClass = {
+          id: `${state.selectedDayCode.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          day: state.selectedDayCode,
+          time,
+          name
+        };
+
+        state.schedule.push(newClass);
+        saveScheduleToStorage(state.schedule);
+        closeNewClassModal();
+        renderDayTabsAndClasses();
+        showToast(`Nova aula "${name}" (${time}) criada!`, 'success');
+      });
+
+      // Navegação de semanas (Domingo a Sábado)
+      document.getElementById('btnPrevWeek').addEventListener('click', () => {
+        state.currentWeekSundayStr = addDaysISO(state.currentWeekSundayStr, -7);
+        renderAll();
+      });
+
+      document.getElementById('btnNextWeek').addEventListener('click', () => {
+        state.currentWeekSundayStr = addDaysISO(state.currentWeekSundayStr, 7);
+        renderAll();
+      });
+
+      document.getElementById('btnCurrentWeek').addEventListener('click', () => {
+        state.currentWeekSundayStr = getSundayOfWeek(getTodayISOInTZ());
+        renderAll();
+      });
+
+      // Exportar PDF e Limpar Fotos
+      document.getElementById('btnExportPdf').addEventListener('click', exportWeeklyPDF);
+      document.getElementById('btnDeleteWeekPhotos').addEventListener('click', handleDeleteWeekPhotos);
+
+      // Validação em tempo real de alunos
+      document.getElementById('inputTotalStudents').addEventListener('input', validateStudentCounts);
+      document.getElementById('inputFirstTimeStudents').addEventListener('input', validateStudentCounts);
+
+      // Upload de fotos no modal da aula
+      document.getElementById('inputLessonPhotos').addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        for (const file of files) {
+          try {
+            const compressed = await compressImageFile(file, 1024, 0.72);
+            state.modalDraftPhotos.push({
+              id: `photo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+              name: file.name,
+              dataUrl: compressed.dataUrl,
+              url: compressed.dataUrl,
+              storagePath: null,
+              createdAt: new Date().toISOString(),
+            });
+          } catch (err) {
+            console.error('Erro ao comprimir foto:', err);
+            showToast(`Erro ao processar a foto ${file.name}.`, 'error');
+          }
+        }
+
+        renderModalPhotos(document.getElementById('inputLessonDate').value);
+        e.target.value = '';
+      });
+
+      // Envio do formulário de frequência
+      document.getElementById('attendanceForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (!validateStudentCounts()) {
+          showToast('Verifique: alunos pela 1ª vez não podem exceder o total.', 'error');
+          return;
+        }
+
+        const classId = document.getElementById('formClassId').value;
+        const existingId = document.getElementById('formRecordId').value;
+        const cls = state.schedule.find(c => c.id === classId);
+        if (!cls) return;
+
+        const totalStudents = Math.max(0, parseInt(document.getElementById('inputTotalStudents').value, 10) || 0);
+        const firstTimeStudents = Math.max(0, parseInt(document.getElementById('inputFirstTimeStudents').value, 10) || 0);
+        const lessonDate = document.getElementById('inputLessonDate').value;
+        const theme = document.getElementById('inputLessonTheme').value.trim();
+        const teacher = document.getElementById('inputTeacherName').value.trim();
+
+        if (!lessonDate || !theme || !teacher) {
+          showToast('Preencha data, tema da aula e professor.', 'error');
+          return;
+        }
+
+        const btnSave = document.getElementById('btnSaveAttendance');
+        btnSave.disabled = true;
+        btnSave.textContent = 'Salvando...';
+
+        try {
+          const uploadedPhotos = [];
+          for (const p of state.modalDraftPhotos) {
+            if (p.storagePath || (p.url && !p.dataUrl)) {
+              uploadedPhotos.push(p);
+            } else {
+              const uploaded = await uploadCompressedPhotoToSupabase(p, lessonDate);
+              uploadedPhotos.push(uploaded);
+            }
+          }
+
+          const record = {
+            id: existingId || (crypto.randomUUID ? crypto.randomUUID() : `rec-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
+            classId: cls.id,
+            className: cls.name,
+            dayCode: cls.day,
+            scheduledTime: cls.time,
+            lessonDate,
+            totalStudents,
+            firstTimeStudents,
+            theme,
+            teacher,
+            photos: uploadedPhotos,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+
+          await saveOrUpdateRecord(record);
+
+          // Ajusta semana exibida para a semana da data lançada se necessário
+          const recSunday = getSundayOfWeek(lessonDate);
+          state.currentWeekSundayStr = recSunday;
+
+          closeAttendanceModal();
+          renderAll();
+          showToast('Frequência salva com sucesso!', 'success');
+        } catch (err) {
+          console.error('Erro ao salvar lançamento:', err);
+          showToast('Erro ao salvar o lançamento.', 'error');
+        } finally {
+          btnSave.disabled = false;
+          btnSave.textContent = 'Salvar Frequência';
+        }
+      });
+
+      // Excluir lançamento existente
+      document.getElementById('btnDeleteRecord').addEventListener('click', () => {
+        const recordId = document.getElementById('formRecordId').value;
+        if (!recordId) return;
+
+        openConfirm({
+          title: 'Excluir Lançamento',
+          message: 'Tem certeza de que deseja excluir este lançamento de frequência e suas fotos vinculadas?',
+          onConfirm: async () => {
+            await deleteRecordById(recordId);
+            closeAttendanceModal();
+            renderAll();
+            showToast('Lançamento removido.', 'success');
+          }
+        });
+      });
+
+      document.getElementById('btnCloseAttendanceModal').addEventListener('click', closeAttendanceModal);
+      document.getElementById('btnCancelAttendance').addEventListener('click', closeAttendanceModal);
+
+      // Modal Supabase
+      const supModal = document.getElementById('supabaseModal');
+      document.getElementById('btnToggleSupabaseModal').addEventListener('click', () => {
+        document.getElementById('cfgSupabaseUrl').value = state.supabaseConfig.url;
+        document.getElementById('cfgSupabaseAnonKey').value = state.supabaseConfig.anonKey;
+        document.getElementById('cfgSupabaseBucket').value = state.supabaseConfig.bucket || 'aula-fotos';
+        supModal.classList.remove('hidden');
+        supModal.classList.add('flex');
+      });
+
+      document.getElementById('btnCloseSupabaseModal').addEventListener('click', () => {
+        supModal.classList.add('hidden');
+        supModal.classList.remove('flex');
+      });
+
+      document.getElementById('btnSaveSupabaseConfig').addEventListener('click', async () => {
+        const url = document.getElementById('cfgSupabaseUrl').value.trim().replace(/\/rest\/v1\/?$/i, '').replace(/\/+$/, '');
+        const anonKey = document.getElementById('cfgSupabaseAnonKey').value.trim();
+        const bucket = (document.getElementById('cfgSupabaseBucket').value.trim() || 'aula-fotos');
+
+        state.supabaseConfig = { url, anonKey, bucket };
+        localStorage.setItem(STORAGE_KEYS.supabaseCfg, JSON.stringify(state.supabaseConfig));
+        initSupabaseClient();
+        await fetchAllRecords();
+        renderAll();
+
+        supModal.classList.add('hidden');
+        supModal.classList.remove('flex');
+        showToast(
+          state.isSupabaseConnected ? 'Conectado ao Supabase!' : 'Configuração salva em modo local.',
+          state.isSupabaseConnected ? 'success' : 'info'
+        );
+      });
+
+      document.getElementById('btnClearSupabaseConfig').addEventListener('click', async () => {
+        state.supabaseConfig = { url: '', anonKey: '', bucket: 'aula-fotos' };
+        localStorage.removeItem(STORAGE_KEYS.supabaseCfg);
+        initSupabaseClient();
+        await fetchAllRecords();
+        renderAll();
+        supModal.classList.add('hidden');
+        supModal.classList.remove('flex');
+        showToast('Modo local ativado.', 'info');
+      });
+
+      document.getElementById('btnCopySql').addEventListener('click', () => {
+        const sqlText = document.getElementById('supabaseSqlBlock').textContent;
+        const tempArea = document.createElement('textarea');
+        tempArea.value = sqlText;
+        document.body.appendChild(tempArea);
+        tempArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempArea);
+        showToast('SQL copiado para a área de transferência!', 'success');
+      });
+
+      // Modal de confirmação
+      document.getElementById('btnConfirmCancel').addEventListener('click', closeConfirm);
+      document.getElementById('btnConfirmOk').addEventListener('click', async () => {
+        const cb = state.confirmCallback;
+        closeConfirm();
+        if (typeof cb === 'function') await cb();
+      });
+
+      // Toast close
+      document.getElementById('toastClose').addEventListener('click', () => {
+        document.getElementById('toastBanner').classList.add('hidden');
+      });
+    }
+
+    /**
+     * =====================================================================
+     * 12. INICIALIZAÇÃO
+     * =====================================================================
+     */
+    window.addEventListener('DOMContentLoaded', async () => {
+      const savedDay = localStorage.getItem(STORAGE_KEYS.selectedDay);
+      state.selectedDayCode = savedDay && DAYS_META.some(d => d.code === savedDay)
+        ? savedDay
+        : getCurrentDayCodeInTZ();
+
+      state.schedule = loadScheduleFromStorage();
+      state.currentWeekSundayStr = getSundayOfWeek(getTodayISOInTZ());
+
+      loadSavedSupabaseConfig();
+      initSupabaseClient();
+      loadExportedWeeks();
+      applyFixedLogo();
+      bindEvents();
+
+      await fetchAllRecords();
+      openAuthModal();
+    });
+  </script>
+</body>
+</html>
